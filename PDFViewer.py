@@ -1,11 +1,13 @@
+import os
 import tkinter as tk
 from tkinter import ttk
 from PIL import Image, ImageTk
 import fitz  # PyMuPDF
 import pytesseract
 from PDFReader import execute_agent
+from dotenv import load_dotenv
 
-thread_id = "thread_zRofpXMJQYgamTRKhQOCK7xD"
+thread_id = os.getenv("THREAD_ID")
 class ContinuousPDFViewer(tk.Frame):
     def __init__(self, master, pdf_path):
         super().__init__(master)

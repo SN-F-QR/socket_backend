@@ -4,8 +4,10 @@ from langchain.agents import Tool, Agent
 from langchain_community.utilities import GoogleSerperAPIWrapper
 from langchain.agents.openai_assistant import OpenAIAssistantRunnable
 from langchain.agents import AgentExecutor
-import os
+from dotenv import load_dotenv
 
+import os
+load_dotenv("key.env")
 md_uid_text = (
     "In the past, model-driven user interface development (MDUID) approaches were proposed "
     "to support the efficient development of UIs. Widely studied approaches like USiXML, MARIA, "
@@ -21,9 +23,12 @@ md_uid_text = (
     "— C1: Specification of contextual parameters: A modeling language is required for specifying different contexts-of-"
     "\n\n© Springer"
 )
+openai_key = os.getenv("OPENAI_API_KEY")
+serper_key = os.getenv("SERPER_API_KEY")
+assistant_id = os.getenv("ASSISTANT_ID")
 
-os.environ["OPENAI_API_KEY"] = "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"
-os.environ["SERPER_API_KEY"] = "dfe5eb09d7f0996eef7a621f2f84fdf8ca290a77"
+os.environ["OPENAI_API_KEY"] = openai_key
+os.environ["SERPER_API_KEY"] = serper_key
 # _instructions = (
 #     "1) You are going to read the OCR-generated text.\n"
 #     "2) Abstract the key words and phrases from the text.\n"
@@ -31,8 +36,6 @@ os.environ["SERPER_API_KEY"] = "dfe5eb09d7f0996eef7a621f2f84fdf8ca290a77"
 #     "3) Provide the direct link to the most relevant resource.\n"
 #     "4) Do not include your internal reasoning in the final answer."
 # )
-# dir = "C:\\Users\\yysym\\Desktop\\ClientScripts"
-#llm = OpenAI(temperature=0)
 
 search = GoogleSerperAPIWrapper()
 tools = [
@@ -43,7 +46,7 @@ tools = [
     )
 ]
 agent = OpenAIAssistantRunnable(
-    assistant_id="asst_ibUwCT5Li3GLWH8UdHTPp0bT",
+    assistant_id=assistant_id,
     as_agent=True,
 )
 
