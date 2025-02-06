@@ -12,6 +12,7 @@ async def handler(websocket):
         async for message in websocket:
             print(f"Received: {message}")
             await websocket.send(f"Echo: {message}")
+            webbrowser.open_new_tab(message)
     except websockets.exceptions.ConnectionClosed:
         print(f"Device disconnected: {websocket.remote_address}")
     finally:
