@@ -3,7 +3,9 @@ from tkinter import ttk
 from PIL import Image, ImageTk
 import fitz  # PyMuPDF
 import pytesseract
+from PDFReader import execute_agent
 
+thread_id = "thread_zRofpXMJQYgamTRKhQOCK7xD"
 class ContinuousPDFViewer(tk.Frame):
     def __init__(self, master, pdf_path):
         super().__init__(master)
@@ -151,9 +153,9 @@ class ContinuousPDFViewer(tk.Frame):
         # OCR 识别
         text = pytesseract.image_to_string(pil_img, lang='eng')  
         # 如果 PDF 是中文，可以换 lang='chi_sim' (需安装中文语言包)
-
-        print(f"[OCR] 第 {page_index+1} 页识别结果(前300字符):\n{text[:]}")
-
+        message = execute_agent({"content":text[:]},thread_id)
+        #print(f"[OCR] 第 {page_index+1} 页识别结果(前300字符):\n{text[:]}")
+        print(message)
     def _adjust_window_size(self):
         """
         (可选) 计算当前 Canvas 内部所有内容的总 bounding box，
