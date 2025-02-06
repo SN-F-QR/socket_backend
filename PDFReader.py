@@ -8,21 +8,6 @@ from dotenv import load_dotenv
 
 import os
 load_dotenv("key.env")
-md_uid_text = (
-    "In the past, model-driven user interface development (MDUID) approaches were proposed "
-    "to support the efficient development of UIs. Widely studied approaches like USiXML, MARIA, "
-    "and IFML support the abstract modeling of user interfaces and their transformation to final user interfaces. "
-    "However, in the aforementioned classical MDUID approaches, the modeling of context management and UI adaptation "
-    "aspects introduce additional complexity as they characterize crosscutting concerns. "
-    "This results in a tightly interwoven model landscape that is hard to understand and maintain. "
-    "Therefore, an integrated model-driven development approach is needed where a classical model-driven development "
-    "of UIs is coupled with a separate model-driven development of context-of-use and UI adaptation rules. "
-    "Hence, in order to support the development of self-adaptive UIs in a systematic way, the following challenges "
-    "have to be addressed to integrate context management and adaptation aspects into MDUID:\n\n"
-    "Context Management Challenges:\n\n"
-    "— C1: Specification of contextual parameters: A modeling language is required for specifying different contexts-of-"
-    "\n\n© Springer"
-)
 openai_key = os.getenv("OPENAI_API_KEY")
 serper_key = os.getenv("SERPER_API_KEY")
 assistant_id = os.getenv("ASSISTANT_ID")
