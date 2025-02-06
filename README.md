@@ -3,4 +3,4 @@
 - Python Package: PyMuPDF, pytesseract, tkinter, python Imaging Library
 ## 清单
 - Http连接到OpenAI，将OCR内容传给OpenAI并接收返回
-- 用socket把OpenAI的返回值传给HoloLens
+- 完善跟hololens的socket通讯
