@@ -1,4 +1,5 @@
 import os
+import threading
 import tkinter as tk
 from tkinter import ttk
 from PIL import Image, ImageTk
@@ -6,7 +7,11 @@ import fitz  # PyMuPDF
 import pytesseract
 from PDFReader import execute_agent
 from dotenv import load_dotenv
+from concurrent.futures import ThreadPoolExecutor
+import asyncio
 
+import sockettest
+from sockettest import send_message_once  # send_message 仍然可以单独导入
 
 class ContinuousPDFViewer(tk.Frame):
     def __init__(self, master, pdf_path):
@@ -14,8 +19,15 @@ class ContinuousPDFViewer(tk.Frame):
         self.pack(fill=tk.BOTH, expand=True)
         self.master = master
 
+        # 初始化事件循环
+        self.loop = asyncio.new_event_loop()
+        self.executor = ThreadPoolExecutor()
+        threading.Thread(target=self._start_event_loop, daemon=True).start()
+        self.current_agent_task = None
+
         self.doc = fitz.open(pdf_path)
         self.total_pages = len(self.doc)
+
 
         # ============ Canvas + Scrollbar ============
         self.canvas = tk.Canvas(self, bg="white")
@@ -49,7 +61,9 @@ class ContinuousPDFViewer(tk.Frame):
 
         self.update_idletasks()  # 刷新布局，确保 bbox 准确
         self._adjust_window_size()
-        self._do_ocr_for_page(0)
+
+        # 使用 run_coroutine_threadsafe 调用异步方法
+        asyncio.run_coroutine_threadsafe(self._do_ocr_for_page_async(0), self.loop)
 
         # ============ "当前页"记录 =============
         self.last_page_idx = None  # 记录上次检测到的“当前页”
@@ -57,6 +71,11 @@ class ContinuousPDFViewer(tk.Frame):
         # ============ 滚动停止检测 =============
         self.scroll_stop_timer = None  # 记录定时器的 ID
         self.scroll_stop_delay = 1000  # 停止滚动后等待的毫秒数 (1秒)
+
+    def _start_event_loop(self):
+        """启动 asyncio 事件循环的线程"""
+        asyncio.set_event_loop(self.loop)
+        self.loop.run_forever()
 
     def render_all_pages(self):
         """一次性渲染所有页到 pages_frame 中。"""
@@ -116,7 +135,7 @@ class ContinuousPDFViewer(tk.Frame):
             # 如果和上次不同，则做OCR
             if page_idx != self.last_page_idx:
                 self.last_page_idx = page_idx
-                self._do_ocr_for_page(page_idx)
+                asyncio.run_coroutine_threadsafe(self._do_ocr_for_page_async(page_idx), self.loop)
 
     def get_current_page(self):
         """
@@ -141,13 +160,34 @@ class ContinuousPDFViewer(tk.Frame):
 
         return closest_index
 
-    def _do_ocr_for_page(self, page_index):
+    async def _do_ocr_for_page_async(self, page_index):
         """
-        对指定页做 OCR，并打印识别到的文字。
-        你也可以把结果显示到文本框、保存到文件等。
+        异步执行 OCR 和 execute_agent 调用。
+        """
+        print("开始 OCR 和调用 execute_agent...")
+        loop = asyncio.get_event_loop()
+        # 取消前一个任务（如果存在）
+        if self.current_agent_task is not None and not self.current_agent_task.done():
+            print(f"取消之前的 Agent 任务：{self.last_page_idx}")
+            self.current_agent_task.cancel()
+        # OCR 任务
+        text = await loop.run_in_executor(self.executor, self._ocr_page, page_index)
+        #print(text)
+        # 调用 execute_agent
+        print("调用 execute_agent...")
+        message = await loop.run_in_executor(self.executor, execute_agent, {"content": text})
+        print(message)
+        print("ws_loop", sockettest.ws_loop)
+        # 异步发送消息
+        if sockettest.ws_loop is not None:
+            print("发送消息到 WebSocket 服务器...")
+            asyncio.run_coroutine_threadsafe(send_message_once(message), sockettest.ws_loop)
+
+    def _ocr_page(self, page_index):
+        """
+        对指定页进行 OCR（同步任务，适用于 ThreadPoolExecutor）。
         """
         print(f"\n[OCR] 开始识别第 {page_index+1} 页...")
-
         zoom_factor = 1.5
         mat = fitz.Matrix(zoom_factor, zoom_factor)
         page = self.doc[page_index]
@@ -161,11 +201,35 @@ class ContinuousPDFViewer(tk.Frame):
         )
 
         # OCR 识别
-        text = pytesseract.image_to_string(pil_img, lang="eng")
-        # 如果 PDF 是中文，可以换 lang='chi_sim' (需安装中文语言包)
-        # message = execute_agent({"content": text[:]})
-        # print(f"[OCR] 第 {page_index+1} 页识别结果(前300字符):\n{text[:]}")
-        # print(message)
+        return pytesseract.image_to_string(pil_img, lang="eng")
+    # def _do_ocr_for_page(self, page_index):
+    #     """
+    #     对指定页做 OCR，并打印识别到的文字。
+    #     你也可以把结果显示到文本框、保存到文件等。
+    #     """
+    #     # print(f"\n[OCR] 开始识别第 {page_index+1} 页...")
+    #
+    #     zoom_factor = 1.5
+    #     mat = fitz.Matrix(zoom_factor, zoom_factor)
+    #     page = self.doc[page_index]
+    #     pix = page.get_pixmap(matrix=mat)
+    #     mode = "RGBA" if pix.alpha else "RGB"
+    #     pil_img = Image.frombytes(mode, [pix.width, pix.height], pix.samples)
+    #
+    #     # 如果 tesseract.exe 不在 PATH 中，需要指定路径:
+    #     pytesseract.pytesseract.tesseract_cmd = (
+    #         r"C:\\Program Files\\Tesseract-OCR\\tesseract.exe"
+    #     )
+    #
+    #     # OCR 识别
+    #     text = pytesseract.image_to_string(pil_img, lang="eng")
+    #     # 如果 PDF 是中文，可以换 lang='chi_sim' (需安装中文语言包)
+    #     message = execute_agent({"content": text[:]})
+    #     # 使用 asyncio.run_coroutine_threadsafe 提交任务到后台线程的事件循环
+    #     link = "google.com"
+    #     if sockettest.ws_loop is not None:
+    #         asyncio.run_coroutine_threadsafe(send_message_once(message), sockettest.ws_loop)
+
 
     def _adjust_window_size(self):
         """
@@ -180,12 +244,24 @@ class ContinuousPDFViewer(tk.Frame):
 
 
 if __name__ == "__main__":
+    print("开始加载 PDF 文件...")
+
+    # 启动 WebSocket 服务
+    threading.Thread(target=sockettest.run_ws_server, daemon=True).start()
+
+    # 启动 asyncio 事件循环（在单独的线程中运行）
+    def start_asyncio_event_loop():
+        asyncio.set_event_loop(asyncio.new_event_loop())
+        loop = asyncio.get_event_loop()
+        loop.run_forever()
+
+    threading.Thread(target=start_asyncio_event_loop, daemon=True).start()
+
+    # 启动 Tkinter 主循环
     root = tk.Tk()
     root.title("连续滚动 PDF + OCR 示例")
 
-    # pdf_path = r"C:\Users\yysym\Downloads\s10270-020-00777-7.pdf"  # 替换为实际路径
-    load_dotenv("key.env")
-    pdf_path = os.getenv("TEST_PDF_PATH")
+    pdf_path = r"C:\Users\yysym\Downloads\s10270-020-00777-7.pdf"  # 替换为实际路径
     viewer = ContinuousPDFViewer(root, pdf_path)
 
     root.mainloop()
