@@ -13,6 +13,7 @@ import asyncio
 import sockettest
 from sockettest import send_message_once  # send_message 仍然可以单独导入
 
+
 class ContinuousPDFViewer(tk.Frame):
     def __init__(self, master, pdf_path):
         super().__init__(master)
@@ -30,7 +31,6 @@ class ContinuousPDFViewer(tk.Frame):
 
         self.doc = fitz.open(pdf_path)
         self.total_pages = len(self.doc)
-
 
         # ============ Canvas + Scrollbar ============
         self.canvas = tk.Canvas(self, bg="white")
@@ -138,7 +138,9 @@ class ContinuousPDFViewer(tk.Frame):
             # 如果和上次不同，则做OCR
             if page_idx != self.last_page_idx:
                 self.last_page_idx = page_idx
-                asyncio.run_coroutine_threadsafe(self._do_ocr_for_page_async(page_idx), self.loop)
+                asyncio.run_coroutine_threadsafe(
+                    self._do_ocr_for_page_async(page_idx), self.loop
+                )
 
     def get_current_page(self):
         """
@@ -173,26 +175,45 @@ class ContinuousPDFViewer(tk.Frame):
             message = self.agent_results_cache[page_index]
         else:
             print("开始 OCR 和调用 execute_agent...")
-            loop = asyncio.get_event_loop()
+            # loop = asyncio.get_event_loop()
 
-            # 取消前一个任务（如果存在）
-            if self.current_agent_task is not None and not self.current_agent_task.done():
+            # 取消前一个任务（如果存在） TODO: Check if it is called or not
+            if (
+                self.current_agent_task is not None
+                and not self.current_agent_task.done()
+            ):
                 print(f"取消之前的 Agent 任务：{self.last_page_idx}")
                 self.current_agent_task.cancel()
             # OCR 任务
-            text = await loop.run_in_executor(self.executor, self._ocr_page, page_index)
-            #print(text)
+            text = await self.loop.run_in_executor(
+                self.executor, self._ocr_page, page_index
+            )
+            # print(text)
             # 调用 execute_agent
             print("调用 execute_agent...")
-            message = await loop.run_in_executor(self.executor, execute_agent, {"content": text})
-            # 缓存结果
-            self.agent_results_cache[page_index] = message
+            message = await self.generate_links(text, page_index)
 
         print(message)
-        # 异步发送消息
-        if sockettest.ws_loop is not None:
+        self.send_to_devices(message)
+
+    async def generate_links(self, text, page_index):
+        """
+        Call LLM API to generate links from text
+        """
+        message = await self.loop.run_in_executor(
+            self.executor, execute_agent, {"content": '"""' + text + '"""'}
+        )
+        # 缓存结果
+        self.agent_results_cache[page_index] = message
+        return message
+
+    def send_to_devices(self, message):
+        """
+        Send suggestions from LLM to devices
+        """
+        if loop_ws is not None:
             print("发送消息到 WebSocket 服务器...")
-            asyncio.run_coroutine_threadsafe(send_message_once(message), sockettest.ws_loop)
+            asyncio.run_coroutine_threadsafe(send_message_once(message), loop_ws)
 
     def _ocr_page(self, page_index):
         """
@@ -213,6 +234,7 @@ class ContinuousPDFViewer(tk.Frame):
 
         # OCR 识别
         return pytesseract.image_to_string(pil_img, lang="eng")
+
     # def _do_ocr_for_page(self, page_index):
     #     """
     #     对指定页做 OCR，并打印识别到的文字。
@@ -241,7 +263,6 @@ class ContinuousPDFViewer(tk.Frame):
     #     if sockettest.ws_loop is not None:
     #         asyncio.run_coroutine_threadsafe(send_message_once(message), sockettest.ws_loop)
 
-
     def _adjust_window_size(self):
         """
         (可选) 计算当前 Canvas 内部所有内容的总 bounding box，
@@ -255,24 +276,16 @@ class ContinuousPDFViewer(tk.Frame):
 
 
 if __name__ == "__main__":
-    print("开始加载 PDF 文件...")
-
     # 启动 WebSocket 服务
-    threading.Thread(target=sockettest.run_ws_server, daemon=True).start()
+    loop_ws = asyncio.new_event_loop()
+    threading.Thread(target=loop_ws.run_forever, daemon=True).start()
+    asyncio.run_coroutine_threadsafe(sockettest.start(), loop_ws)
+    # threading.Thread(target=sockettest.run_ws_server, daemon=True).start()
 
-    # 启动 asyncio 事件循环（在单独的线程中运行）
-    def start_asyncio_event_loop():
-        asyncio.set_event_loop(asyncio.new_event_loop())
-        loop = asyncio.get_event_loop()
-        loop.run_forever()
-
-    threading.Thread(target=start_asyncio_event_loop, daemon=True).start()
-
+    print("开始加载 PDF 文件...")
     # 启动 Tkinter 主循环
     root = tk.Tk()
-    root.title("连续滚动 PDF + OCR 示例")
-    #pdf_path = os.getenv("PDF_PATH")
-    pdf_path = r"C:\Users\yysym\Downloads\s10270-020-00777-7.pdf"  # 替换为实际路径
+    root.title("PDF Viewer")
+    pdf_path = r"Reading Textbook.pdf"  # 替换为实际路径
     viewer = ContinuousPDFViewer(root, pdf_path)
-
     root.mainloop()
