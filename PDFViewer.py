@@ -19,6 +19,9 @@ class ContinuousPDFViewer(tk.Frame):
         self.pack(fill=tk.BOTH, expand=True)
         self.master = master
 
+        # 初始化缓存
+        self.agent_results_cache = {}  # 用于缓存每页的 execute_agent 结果
+
         # 初始化事件循环
         self.loop = asyncio.new_event_loop()
         self.executor = ThreadPoolExecutor()
@@ -164,20 +167,28 @@ class ContinuousPDFViewer(tk.Frame):
         """
         异步执行 OCR 和 execute_agent 调用。
         """
-        print("开始 OCR 和调用 execute_agent...")
-        loop = asyncio.get_event_loop()
-        # 取消前一个任务（如果存在）
-        if self.current_agent_task is not None and not self.current_agent_task.done():
-            print(f"取消之前的 Agent 任务：{self.last_page_idx}")
-            self.current_agent_task.cancel()
-        # OCR 任务
-        text = await loop.run_in_executor(self.executor, self._ocr_page, page_index)
-        #print(text)
-        # 调用 execute_agent
-        print("调用 execute_agent...")
-        message = await loop.run_in_executor(self.executor, execute_agent, {"content": text})
+        # 检查缓存
+        if page_index in self.agent_results_cache:
+            print(f"从缓存中获取第 {page_index + 1} 页的结果...")
+            message = self.agent_results_cache[page_index]
+        else:
+            print("开始 OCR 和调用 execute_agent...")
+            loop = asyncio.get_event_loop()
+
+            # 取消前一个任务（如果存在）
+            if self.current_agent_task is not None and not self.current_agent_task.done():
+                print(f"取消之前的 Agent 任务：{self.last_page_idx}")
+                self.current_agent_task.cancel()
+            # OCR 任务
+            text = await loop.run_in_executor(self.executor, self._ocr_page, page_index)
+            #print(text)
+            # 调用 execute_agent
+            print("调用 execute_agent...")
+            message = await loop.run_in_executor(self.executor, execute_agent, {"content": text})
+            # 缓存结果
+            self.agent_results_cache[page_index] = message
+
         print(message)
-        print("ws_loop", sockettest.ws_loop)
         # 异步发送消息
         if sockettest.ws_loop is not None:
             print("发送消息到 WebSocket 服务器...")
@@ -260,7 +271,7 @@ if __name__ == "__main__":
     # 启动 Tkinter 主循环
     root = tk.Tk()
     root.title("连续滚动 PDF + OCR 示例")
-
+    #pdf_path = os.getenv("PDF_PATH")
     pdf_path = r"C:\Users\yysym\Downloads\s10270-020-00777-7.pdf"  # 替换为实际路径
     viewer = ContinuousPDFViewer(root, pdf_path)
 

@@ -14,8 +14,8 @@ import os
 
 load_dotenv("key.env")
 assistant_id = os.getenv("ASSISTANT_ID")
-thread_id = os.getenv("THREAD_ID")
-#thread_id = ""
+#thread_id = os.getenv("THREAD_ID")
+thread_id = ""
 if len(thread_id) == 0:
     client = OpenAI()
     empty_thread = client.beta.threads.create()
@@ -71,7 +71,7 @@ def execute_agent(input):
                 "thread_id": thread_id,
             }
         )
-    print(origin_webs)
+    #print(origin_webs)
     return origin_webs
 
 
