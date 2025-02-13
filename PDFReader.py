@@ -70,10 +70,10 @@ def execute_agent(input):
         )
 
     # Eliminate possible reasoning texts
-    webs_json = re.search(r"\[.*\]", response.return_values["output"]).group()
+    # webs_json = re.search(r"\[.*\]", response.return_values["output"]).group()
 
-    return webs_json  # 注意这里不要把origin_webs返回, 返回最终结果
-
+    # return webs_json  # 注意这里不要把origin_webs返回, 返回最终结果
+    return response.return_values["output"]
 
 def handle_search_result(result):
     """
