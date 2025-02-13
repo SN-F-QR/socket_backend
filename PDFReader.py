@@ -70,10 +70,11 @@ def execute_agent(input):
         )
 
     # Eliminate possible reasoning texts
-    # webs_json = re.search(r"\[.*\]", response.return_values["output"]).group()
+    webs_json = re.search(r"\[(\s|.)*\]", response.return_values["output"]).group()
 
-    # return webs_json  # 注意这里不要把origin_webs返回, 返回最终结果
-    return response.return_values["output"]
+    return webs_json  # 注意这里不要把origin_webs返回, 返回最终结果
+    # return response.return_values["output"]
+
 
 def handle_search_result(result):
     """
@@ -110,6 +111,5 @@ if __name__ == "__main__":
         "content": '"""Within-subjects and between-subjects are two fundamental experimental design approaches in research methodology. In a within-subjects design, all participants experience every experimental condition, serving as their own control group, which leads to higher statistical power and requires fewer participants. This design is particularly effective at controlling individual differences and detecting small but meaningful changes in responses. However, it can be vulnerable to fatigue and carryover effects when participants undergo multiple treatments. In contrast, between-subjects design involves dividing participants into separate groups, with each group experiencing only one condition. This approach is particularly useful when studying treatments that cannot be reversed or when researchers want to avoid practice effects1. While it requires more participants to achieve statistical significance and may be affected by individual differences between groups, it offers the advantage of shorter experimental duration per participant and eliminates concerns about carryover effects. The choice between these designs often depends on specific research needs, such as the nature of the treatment, available resources, and whether the potential for practice or fatigue effects could impact results. Between-subjects design is typically preferred when exposure to one condition might influence responses to others, while within-subjects design is more suitable when studying changes or differences within individual participants over time."""'
     }
     message = execute_agent(test_input)
-    links = message.return_values["output"]
-    links = json.loads(links)
+    links = json.loads(message)
     print(links)
