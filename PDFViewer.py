@@ -75,7 +75,9 @@ class ContinuousPDFViewer(tk.Frame):
         self.scroll_stop_delay = 1000  # 停止滚动后等待的毫秒数 (1秒)
 
         self.scroll_stop_callback = scroll_stop_callback
-        scroll_stop_callback and scroll_stop_callback(0, self.doc[0])
+        self.scroll_callback_status = None
+        if scroll_stop_callback:
+            self.scroll_callback_status = scroll_stop_callback(0, self.doc[0])
 
     def render_all_pages(self):
         """一次性渲染所有页到 pages_frame 中。"""
@@ -135,9 +137,17 @@ class ContinuousPDFViewer(tk.Frame):
             # 如果和上次不同，则做OCR
             if page_idx != self.last_page_idx:
                 self.last_page_idx = page_idx
-                self.scroll_stop_callback and self.scroll_stop_callback(
-                    page_idx, self.doc[page_idx]
-                )
+                # Cancel the previous task if it is not done
+                if (
+                    self.scroll_callback_status
+                    and not self.scroll_callback_status.done()
+                ):
+                    self.scroll_callback_status.cancel()
+                    self.scroll_callback_status = None
+                if self.scroll_stop_callback:
+                    self.scroll_callback_status = self.scroll_stop_callback(
+                        page_idx, self.doc[page_idx]
+                    )
                 # asyncio.run_coroutine_threadsafe(
                 #     self._do_ocr_for_page_async(page_idx), self.loop
                 # )

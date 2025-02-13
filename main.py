@@ -21,7 +21,6 @@ async def do_ocr_for_page_async(page_index, page):
     else:
         print("开始 OCR 和调用 execute_agent...")
         text = await loop.run_in_executor(executor, utility.ocr_page, page)
-        # 取消前一个任务（如果存在） TODO: Check if it is called or not
 
         # print(text)
         # 调用 execute_agent
