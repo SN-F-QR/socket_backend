@@ -15,19 +15,18 @@ from sockettest import send_message_once  # send_message 仍然可以单独导�
 
 
 class ContinuousPDFViewer(tk.Frame):
-    def __init__(self, master, pdf_path):
+    def __init__(self, master, pdf_path, scroll_stop_callback=None):
         super().__init__(master)
         self.pack(fill=tk.BOTH, expand=True)
         self.master = master
-
         # 初始化缓存
-        self.agent_results_cache = {}  # 用于缓存每页的 execute_agent 结果
+        # self.agent_results_cache = {}  # 用于缓存每页的 execute_agent 结果
 
         # 初始化事件循环
-        self.loop = asyncio.new_event_loop()
-        self.executor = ThreadPoolExecutor()
-        threading.Thread(target=self._start_event_loop, daemon=True).start()
-        self.current_agent_task = None
+        # self.loop = asyncio.new_event_loop()
+        # self.executor = ThreadPoolExecutor()
+        # threading.Thread(target=self._start_event_loop, daemon=True).start()
+        # self.current_agent_task = None
 
         self.doc = fitz.open(pdf_path)
         self.total_pages = len(self.doc)
@@ -66,7 +65,7 @@ class ContinuousPDFViewer(tk.Frame):
         self._adjust_window_size()
 
         # 使用 run_coroutine_threadsafe 调用异步方法
-        asyncio.run_coroutine_threadsafe(self._do_ocr_for_page_async(0), self.loop)
+        # asyncio.run_coroutine_threadsafe(self._do_ocr_for_page_async(0), self.loop)
 
         # ============ "当前页"记录 =============
         self.last_page_idx = None  # 记录上次检测到的“当前页”
@@ -75,10 +74,8 @@ class ContinuousPDFViewer(tk.Frame):
         self.scroll_stop_timer = None  # 记录定时器的 ID
         self.scroll_stop_delay = 1000  # 停止滚动后等待的毫秒数 (1秒)
 
-    def _start_event_loop(self):
-        """启动 asyncio 事件循环的线程"""
-        asyncio.set_event_loop(self.loop)
-        self.loop.run_forever()
+        self.scroll_stop_callback = scroll_stop_callback
+        scroll_stop_callback and scroll_stop_callback(0, self.doc[0])
 
     def render_all_pages(self):
         """一次性渲染所有页到 pages_frame 中。"""
@@ -138,13 +135,17 @@ class ContinuousPDFViewer(tk.Frame):
             # 如果和上次不同，则做OCR
             if page_idx != self.last_page_idx:
                 self.last_page_idx = page_idx
-                asyncio.run_coroutine_threadsafe(
-                    self._do_ocr_for_page_async(page_idx), self.loop
+                self.scroll_stop_callback and self.scroll_stop_callback(
+                    page_idx, self.doc[page_idx]
                 )
+                # asyncio.run_coroutine_threadsafe(
+                #     self._do_ocr_for_page_async(page_idx), self.loop
+                # )
 
     def get_current_page(self):
         """
         判断当前可视区域中, 离“视口中心”最近的那一页, 视为“当前页”。
+        return: page number | none
         """
         view_top = self.canvas.canvasy(0)
         view_bottom = view_top + self.canvas.winfo_height()
@@ -165,75 +166,75 @@ class ContinuousPDFViewer(tk.Frame):
 
         return closest_index
 
-    async def _do_ocr_for_page_async(self, page_index):
-        """
-        异步执行 OCR 和 execute_agent 调用。
-        """
-        # 检查缓存
-        if page_index in self.agent_results_cache:
-            print(f"从缓存中获取第 {page_index + 1} 页的结果...")
-            message = self.agent_results_cache[page_index]
-        else:
-            print("开始 OCR 和调用 execute_agent...")
-            # loop = asyncio.get_event_loop()
+    # async def _do_ocr_for_page_async(self, page_index):
+    #     """
+    #     异步执行 OCR 和 execute_agent 调用。
+    #     """
+    #     # 检查缓存
+    #     if page_index in self.agent_results_cache:
+    #         print(f"从缓存中获取第 {page_index + 1} 页的结果...")
+    #         message = self.agent_results_cache[page_index]
+    #     else:
+    #         print("开始 OCR 和调用 execute_agent...")
+    #         # loop = asyncio.get_event_loop()
 
-            # 取消前一个任务（如果存在） TODO: Check if it is called or not
-            if (
-                self.current_agent_task is not None
-                and not self.current_agent_task.done()
-            ):
-                print(f"取消之前的 Agent 任务：{self.last_page_idx}")
-                self.current_agent_task.cancel()
-            # OCR 任务
-            text = await self.loop.run_in_executor(
-                self.executor, self._ocr_page, page_index
-            )
-            # print(text)
-            # 调用 execute_agent
-            print("调用 execute_agent...")
-            message = await self.generate_links(text, page_index)
+    #         # 取消前一个任务（如果存在） TODO: Check if it is called or not
+    #         if (
+    #             self.current_agent_task is not None
+    #             and not self.current_agent_task.done()
+    #         ):
+    #             print(f"取消之前的 Agent 任务：{self.last_page_idx}")
+    #             self.current_agent_task.cancel()
+    #         # OCR 任务
+    #         text = await self.loop.run_in_executor(
+    #             self.executor, self._ocr_page, page_index
+    #         )
+    #         # print(text)
+    #         # 调用 execute_agent
+    #         print("调用 execute_agent...")
+    #         message = await self.generate_links(text, page_index)
 
-        print(message)
-        self.send_to_devices(message)
+    #     print(message)
+    #     self.send_to_devices(message)
 
-    async def generate_links(self, text, page_index):
-        """
-        Call LLM API to generate links from text
-        """
-        message = await self.loop.run_in_executor(
-            self.executor, execute_agent, {"content": '"""' + text + '"""'}
-        )
-        # 缓存结果
-        self.agent_results_cache[page_index] = message
-        return message
+    # async def generate_links(self, text, page_index):
+    #     """
+    #     Call LLM API to generate links from text
+    #     """
+    #     message = await self.loop.run_in_executor(
+    #         self.executor, execute_agent, {"content": '"""' + text + '"""'}
+    #     )
+    #     # 缓存结果
+    #     self.agent_results_cache[page_index] = message
+    #     return message
 
-    def send_to_devices(self, message):
-        """
-        Send suggestions from LLM to devices
-        """
-        if loop_ws is not None:
-            print("发送消息到 WebSocket 服务器...")
-            asyncio.run_coroutine_threadsafe(send_message_once(message), loop_ws)
+    # def send_to_devices(self, message):
+    #     """
+    #     Send suggestions from LLM to devices
+    #     """
+    #     if loop_ws is not None:
+    #         print("发送消息到 WebSocket 服务器...")
+    #         asyncio.run_coroutine_threadsafe(send_message_once(message), loop_ws)
 
-    def _ocr_page(self, page_index):
-        """
-        对指定页进行 OCR（同步任务，适用于 ThreadPoolExecutor）。
-        """
-        print(f"\n[OCR] 开始识别第 {page_index+1} 页...")
-        zoom_factor = 1.5
-        mat = fitz.Matrix(zoom_factor, zoom_factor)
-        page = self.doc[page_index]
-        pix = page.get_pixmap(matrix=mat)
-        mode = "RGBA" if pix.alpha else "RGB"
-        pil_img = Image.frombytes(mode, [pix.width, pix.height], pix.samples)
+    # def _ocr_page(self, page_index):
+    #     """
+    #     对指定页进行 OCR（同步任务，适用于 ThreadPoolExecutor）。
+    #     """
+    #     print(f"\n[OCR] 开始识别第 {page_index+1} 页...")
+    #     zoom_factor = 1.5
+    #     mat = fitz.Matrix(zoom_factor, zoom_factor)
+    #     page = self.doc[page_index]
+    #     pix = page.get_pixmap(matrix=mat)
+    #     mode = "RGBA" if pix.alpha else "RGB"
+    #     pil_img = Image.frombytes(mode, [pix.width, pix.height], pix.samples)
 
-        # 如果 tesseract.exe 不在 PATH 中，需要指定路径:
-        pytesseract.pytesseract.tesseract_cmd = (
-            r"C:\\Program Files\\Tesseract-OCR\\tesseract.exe"
-        )
+    #     # 如果 tesseract.exe 不在 PATH 中，需要指定路径:
+    #     pytesseract.pytesseract.tesseract_cmd = (
+    #         r"C:\\Program Files\\Tesseract-OCR\\tesseract.exe"
+    #     )
 
-        # OCR 识别
-        return pytesseract.image_to_string(pil_img, lang="eng")
+    #     # OCR 识别
+    #     return pytesseract.image_to_string(pil_img, lang="eng")
 
     # def _do_ocr_for_page(self, page_index):
     #     """
@@ -276,12 +277,6 @@ class ContinuousPDFViewer(tk.Frame):
 
 
 if __name__ == "__main__":
-    # 启动 WebSocket 服务
-    loop_ws = asyncio.new_event_loop()
-    threading.Thread(target=loop_ws.run_forever, daemon=True).start()
-    asyncio.run_coroutine_threadsafe(sockettest.start(), loop_ws)
-    # threading.Thread(target=sockettest.run_ws_server, daemon=True).start()
-
     print("开始加载 PDF 文件...")
     # 启动 Tkinter 主循环
     root = tk.Tk()

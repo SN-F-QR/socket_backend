@@ -112,4 +112,4 @@ if __name__ == "__main__":
     message = execute_agent(test_input)
     links = message.return_values["output"]
     links = json.loads(links)
-    # print(message)
+    print(links)
