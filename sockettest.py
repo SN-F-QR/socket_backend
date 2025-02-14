@@ -1,6 +1,8 @@
 import asyncio
 import websockets
 import webbrowser
+import re
+import json
 
 connected_devices = set()
 # ws_loop = None  # 全局变量，用于保存后台线程的事件循环
@@ -18,7 +20,11 @@ async def handler(websocket):
         async for message in websocket:
             print(f"Received: {message}")
             await websocket.send(f"Echo: {message}")
-            webbrowser.open_new_tab(message)
+            if re.match(r"https?:\/\/", message):
+                webbrowser.open_new_tab(message)
+            elif re.match(r"\{\"type\":[\s\S]*\}", message):
+                print(json.loads(message))
+
     except websockets.exceptions.ConnectionClosed:
         print(f"Device disconnected: {websocket.remote_address}")
     finally:
@@ -112,5 +118,5 @@ async def start():
 #     asyncio.set_event_loop(ws_loop)
 #     ws_loop.create_task(start())
 #     ws_loop.run_forever()
-# if __name__ == "__main__":
-#     asyncio.run(start())
+if __name__ == "__main__":
+    asyncio.run(start())

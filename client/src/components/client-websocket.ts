@@ -23,7 +23,7 @@ const initializeWebsocket = () => {
 
   socket.ws.onopen = () => {
     console.log(`Websocket connected to ${WEBSOCKET_URL}`);
-    sendMessage(`type: video, id: ${socket!.id}`);
+    sendMessage(`{"type": "video", "id": "${socket!.id}"}`);
   };
 
   socket.ws.onclose = () => {
@@ -48,7 +48,7 @@ const sendMessage = (message: string) => {
 };
 
 const sendVideoProgress = (progress: number) => {
-  sendMessage(`type: video, progress: ${progress}`);
+  sendMessage(`{"type": "video", "progress": ${progress}}`);
 };
 
 const closeWebsocket = () => {
