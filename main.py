@@ -15,7 +15,7 @@ async def do_ocr_for_page_async(page_index, page):
     异步执行 OCR 和 execute_agent 调用。
     """
     # 检查缓存
-    if page_index in agent_results_cache:
+    if page_index >= 0 and page_index in agent_results_cache:
         print(f"从缓存中获取第 {page_index + 1} 页的结果...")
         message = agent_results_cache[page_index]
     else:
@@ -39,7 +39,8 @@ async def generate_links(text, page_index):
         executor, execute_agent, {"content": '"""' + text + '"""'}
     )
     # 缓存结果
-    agent_results_cache[page_index] = message
+    if page_index >= 0:
+        agent_results_cache[page_index] = message
     return message
 
 

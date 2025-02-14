@@ -7,7 +7,7 @@ import fitz  # PyMuPDF
 import pytesseract
 from PDFReader import execute_agent
 from dotenv import load_dotenv
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, Future
 import asyncio
 
 import sockettest
@@ -19,14 +19,6 @@ class ContinuousPDFViewer(tk.Frame):
         super().__init__(master)
         self.pack(fill=tk.BOTH, expand=True)
         self.master = master
-        # 初始化缓存
-        # self.agent_results_cache = {}  # 用于缓存每页的 execute_agent 结果
-
-        # 初始化事件循环
-        # self.loop = asyncio.new_event_loop()
-        # self.executor = ThreadPoolExecutor()
-        # threading.Thread(target=self._start_event_loop, daemon=True).start()
-        # self.current_agent_task = None
 
         self.doc = fitz.open(pdf_path)
         self.total_pages = len(self.doc)
@@ -45,8 +37,9 @@ class ContinuousPDFViewer(tk.Frame):
         self.pages_frame = tk.Frame(self.canvas, bg="white")
         self.canvas.create_window((0, 0), window=self.pages_frame, anchor="nw")
 
-        self.photo_images = []  # 存放 PhotoImage 引用，防止被回收
-        self.page_labels = []  # 每页的 Label，用于计算位置
+        self.page_images = []  # 每页的 PIL.Image (放大或原始)
+        self.page_tk_images = []  # 每页的 ImageTk.PhotoImage
+        self.page_canvases = []  # 每页的 Canvas
 
         # 绑定滚轮 (Windows)
         self.canvas.bind_all("<MouseWheel>", self._on_mousewheel_windows)
@@ -64,9 +57,6 @@ class ContinuousPDFViewer(tk.Frame):
         self.update_idletasks()  # 刷新布局，确保 bbox 准确
         self._adjust_window_size()
 
-        # 使用 run_coroutine_threadsafe 调用异步方法
-        # asyncio.run_coroutine_threadsafe(self._do_ocr_for_page_async(0), self.loop)
-
         # ============ "当前页"记录 =============
         self.last_page_idx = None  # 记录上次检测到的“当前页”
 
@@ -80,8 +70,7 @@ class ContinuousPDFViewer(tk.Frame):
             self.scroll_callback_status = scroll_stop_callback(0, self.doc[0])
 
     def render_all_pages(self):
-        """一次性渲染所有页到 pages_frame 中。"""
-        zoom_factor = 1.5  # 放大倍数(可调节)
+        zoom_factor = 1.5
         mat = fitz.Matrix(zoom_factor, zoom_factor)
 
         for page_index in range(self.total_pages):
@@ -90,13 +79,41 @@ class ContinuousPDFViewer(tk.Frame):
             mode = "RGBA" if pix.alpha else "RGB"
             pil_img = Image.frombytes(mode, [pix.width, pix.height], pix.samples)
 
-            tk_img = ImageTk.PhotoImage(pil_img)
-            self.photo_images.append(tk_img)
+            self.page_images.append(pil_img)
 
-            # 创建 Label 展示
-            lbl = tk.Label(self.pages_frame, image=tk_img, bg="white")
-            lbl.pack(pady=10)
-            self.page_labels.append(lbl)
+            tk_img = ImageTk.PhotoImage(pil_img)
+            self.page_tk_images.append(tk_img)
+
+            # 用 Canvas 放置图像，后续可在上面画矩形
+            page_canvas = tk.Canvas(
+                self.pages_frame,
+                width=pil_img.width,
+                height=pil_img.height,
+                bg="white",
+                highlightthickness=0,
+            )
+            page_canvas.pack(pady=10)  # 每页间留点空隙
+            page_canvas.create_image(0, 0, anchor="nw", image=tk_img)
+
+            # 存储起来，后面要在 get_current_page() / 鼠标事件用
+            self.page_canvases.append(page_canvas)
+
+            # 绑定鼠标事件：绘制拖拽矩形
+            page_canvas.bind(
+                "<Button-1>", lambda e, idx=page_index: self.on_left_button_down(e, idx)
+            )
+            page_canvas.bind(
+                "<B1-Motion>", lambda e, idx=page_index: self.on_mouse_drag(e, idx)
+            )
+            page_canvas.bind(
+                "<ButtonRelease-1>",
+                lambda e, idx=page_index: self.on_left_button_up(e, idx),
+            )
+
+            # 初始化矩形信息
+            page_canvas._start_x = None
+            page_canvas._start_y = None
+            page_canvas._rect_id = None
 
     def _on_frame_configure(self, event):
         """当 pages_frame 大小变化时，更新 Canvas 的滚动区域。"""
@@ -148,14 +165,71 @@ class ContinuousPDFViewer(tk.Frame):
                     self.scroll_callback_status = self.scroll_stop_callback(
                         page_idx, self.doc[page_idx]
                     )
-                # asyncio.run_coroutine_threadsafe(
-                #     self._do_ocr_for_page_async(page_idx), self.loop
-                # )
+
+    # ============ 鼠标事件：可视化选区 + OCR ============
+    def on_left_button_down(self, event, page_index):
+        """
+        鼠标左键按下：记录起点坐标，创建一个空矩形
+        """
+        c = self.page_canvases[page_index]
+        c._start_x, c._start_y = event.x, event.y
+
+        # 如果已有矩形，先删掉
+        if c._rect_id is not None:
+            c.delete(c._rect_id)
+            c._rect_id = None
+
+        # 创建一个新的矩形
+        c._rect_id = c.create_rectangle(
+            event.x, event.y, event.x, event.y, outline="red", width=2, dash=(2, 2)
+        )
+
+    def on_mouse_drag(self, event, page_index):
+        """
+        鼠标拖动时，更新矩形坐标
+        """
+        c = self.page_canvases[page_index]
+        if c._start_x is None or c._start_y is None:
+            return
+        # 动态更新可视化矩形的位置
+        c.coords(c._rect_id, c._start_x, c._start_y, event.x, event.y)
+
+    def on_left_button_up(self, event, page_index):
+        """
+        鼠标左键松开：获取最终选区，对选区进行 OCR
+        """
+        c = self.page_canvases[page_index]
+        if c._rect_id is None:
+            return
+
+        x1, y1, x2, y2 = c.coords(c._rect_id)
+        x1, x2 = sorted([x1, x2])
+        y1, y2 = sorted([y1, y2])
+
+        # 如果选区过小就忽略
+        if (x2 - x1) < 5 or (y2 - y1) < 5:
+            print("[Info] 选区太小，取消 OCR。")
+            return
+
+        # 防止越界
+        pil_img = self.page_images[page_index]
+        x2 = min(x2, pil_img.width)
+        y2 = min(y2, pil_img.height)
+
+        # 裁剪该区域
+        cropped = pil_img.crop((x1, y1, x2, y2))
+        # 这里可以走同步或异步 OCR，下面演示同步即可
+        if self.scroll_stop_callback:
+            wait_result = self.scroll_stop_callback(-1, cropped)
+            wait_result.result()
+
+        # 看需求是否要清除矩形
+        c.delete(c._rect_id)
+        c._rect_id = None
 
     def get_current_page(self):
         """
-        判断当前可视区域中, 离“视口中心”最近的那一页, 视为“当前页”。
-        return: page number | none
+        根据可视窗口中心位置，找距离最近的 Canvas 视为当前页
         """
         view_top = self.canvas.canvasy(0)
         view_bottom = view_top + self.canvas.winfo_height()
@@ -164,115 +238,16 @@ class ContinuousPDFViewer(tk.Frame):
         closest_index = None
         min_dist = float("inf")
 
-        for i, lbl in enumerate(self.page_labels):
-            lbl_top = lbl.winfo_y()
-            lbl_bottom = lbl_top + lbl.winfo_height()
-            lbl_center = (lbl_top + lbl_bottom) / 2
-
-            dist = abs(lbl_center - view_center)
+        for i, page_canvas in enumerate(self.page_canvases):
+            top = page_canvas.winfo_y()
+            bottom = top + page_canvas.winfo_height()
+            center = (top + bottom) / 2
+            dist = abs(center - view_center)
             if dist < min_dist:
                 min_dist = dist
                 closest_index = i
 
         return closest_index
-
-    # async def _do_ocr_for_page_async(self, page_index):
-    #     """
-    #     异步执行 OCR 和 execute_agent 调用。
-    #     """
-    #     # 检查缓存
-    #     if page_index in self.agent_results_cache:
-    #         print(f"从缓存中获取第 {page_index + 1} 页的结果...")
-    #         message = self.agent_results_cache[page_index]
-    #     else:
-    #         print("开始 OCR 和调用 execute_agent...")
-    #         # loop = asyncio.get_event_loop()
-
-    #         # 取消前一个任务（如果存在） TODO: Check if it is called or not
-    #         if (
-    #             self.current_agent_task is not None
-    #             and not self.current_agent_task.done()
-    #         ):
-    #             print(f"取消之前的 Agent 任务：{self.last_page_idx}")
-    #             self.current_agent_task.cancel()
-    #         # OCR 任务
-    #         text = await self.loop.run_in_executor(
-    #             self.executor, self._ocr_page, page_index
-    #         )
-    #         # print(text)
-    #         # 调用 execute_agent
-    #         print("调用 execute_agent...")
-    #         message = await self.generate_links(text, page_index)
-
-    #     print(message)
-    #     self.send_to_devices(message)
-
-    # async def generate_links(self, text, page_index):
-    #     """
-    #     Call LLM API to generate links from text
-    #     """
-    #     message = await self.loop.run_in_executor(
-    #         self.executor, execute_agent, {"content": '"""' + text + '"""'}
-    #     )
-    #     # 缓存结果
-    #     self.agent_results_cache[page_index] = message
-    #     return message
-
-    # def send_to_devices(self, message):
-    #     """
-    #     Send suggestions from LLM to devices
-    #     """
-    #     if loop_ws is not None:
-    #         print("发送消息到 WebSocket 服务器...")
-    #         asyncio.run_coroutine_threadsafe(send_message_once(message), loop_ws)
-
-    # def _ocr_page(self, page_index):
-    #     """
-    #     对指定页进行 OCR（同步任务，适用于 ThreadPoolExecutor）。
-    #     """
-    #     print(f"\n[OCR] 开始识别第 {page_index+1} 页...")
-    #     zoom_factor = 1.5
-    #     mat = fitz.Matrix(zoom_factor, zoom_factor)
-    #     page = self.doc[page_index]
-    #     pix = page.get_pixmap(matrix=mat)
-    #     mode = "RGBA" if pix.alpha else "RGB"
-    #     pil_img = Image.frombytes(mode, [pix.width, pix.height], pix.samples)
-
-    #     # 如果 tesseract.exe 不在 PATH 中，需要指定路径:
-    #     pytesseract.pytesseract.tesseract_cmd = (
-    #         r"C:\\Program Files\\Tesseract-OCR\\tesseract.exe"
-    #     )
-
-    #     # OCR 识别
-    #     return pytesseract.image_to_string(pil_img, lang="eng")
-
-    # def _do_ocr_for_page(self, page_index):
-    #     """
-    #     对指定页做 OCR，并打印识别到的文字。
-    #     你也可以把结果显示到文本框、保存到文件等。
-    #     """
-    #     # print(f"\n[OCR] 开始识别第 {page_index+1} 页...")
-    #
-    #     zoom_factor = 1.5
-    #     mat = fitz.Matrix(zoom_factor, zoom_factor)
-    #     page = self.doc[page_index]
-    #     pix = page.get_pixmap(matrix=mat)
-    #     mode = "RGBA" if pix.alpha else "RGB"
-    #     pil_img = Image.frombytes(mode, [pix.width, pix.height], pix.samples)
-    #
-    #     # 如果 tesseract.exe 不在 PATH 中，需要指定路径:
-    #     pytesseract.pytesseract.tesseract_cmd = (
-    #         r"C:\\Program Files\\Tesseract-OCR\\tesseract.exe"
-    #     )
-    #
-    #     # OCR 识别
-    #     text = pytesseract.image_to_string(pil_img, lang="eng")
-    #     # 如果 PDF 是中文，可以换 lang='chi_sim' (需安装中文语言包)
-    #     message = execute_agent({"content": text[:]})
-    #     # 使用 asyncio.run_coroutine_threadsafe 提交任务到后台线程的事件循环
-    #     link = "google.com"
-    #     if sockettest.ws_loop is not None:
-    #         asyncio.run_coroutine_threadsafe(send_message_once(message), sockettest.ws_loop)
 
     def _adjust_window_size(self):
         """
