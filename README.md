@@ -12,8 +12,21 @@ Conda 下安装环境:
 
 `conda env update --name myenv --file environment.yml --prune`
 
-## 本地socket连接测试
-在[Postman](https://www.postman.com/)新建一个socket任务
+### Video 前端环境
+
+Node.js 22
+
+```shell
+cd client
+npm install
+
+# 运行
+npm run dev
+```
+
+## 本地 socket 连接测试
+
+在[Postman](https://www.postman.com/)新建一个 socket 任务
 
 ## 清单
 
