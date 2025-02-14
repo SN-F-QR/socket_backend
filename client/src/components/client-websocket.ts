@@ -11,6 +11,7 @@ const initializeWebsocket = () => {
   if (socket === undefined) {
     try {
       socket = { ws: new WebSocket(WEBSOCKET_URL), id: crypto.randomUUID() };
+      console.log(`Websocket initialized with id: ${socket.id}`);
     } catch (error) {
       console.log("Error while initializing websocket: ", error);
       socket = undefined;
@@ -51,7 +52,10 @@ const sendVideoProgress = (progress: number) => {
 };
 
 const closeWebsocket = () => {
-  if (socket && socket.ws.readyState === WebSocket.OPEN) {
+  if (
+    socket &&
+    (socket.ws.readyState === WebSocket.OPEN || WebSocket.CONNECTING)
+  ) {
     socket.ws.close();
   }
   socket = undefined;
