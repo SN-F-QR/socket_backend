@@ -4,19 +4,25 @@ import { sendVideoProgress } from "./client-websocket";
 const Player = () => {
   const [videoPath, setVideoPath] = useState<string | undefined>(undefined); // fake path
   const [videoName, setVideoName] = useState<string | undefined>(undefined);
-  // const [subtitlePath, setSubtitlePath] = useState<string | undefined>(
-  //   undefined,
-  // );
+  const [subtitlePath, setSubtitlePath] = useState<string | undefined>(
+    undefined,
+  );
   const progress = useRef<number>(0); // current video progress
 
   const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const path = URL.createObjectURL(file);
-      setVideoName(file.name);
-      setVideoPath(path);
+    const files = e.target.files;
+    if (files) {
+      console.log("files", files);
+      for (const file of files) {
+        const url = URL.createObjectURL(file);
+        if (file.type.startsWith("video/")) {
+          setVideoPath(url);
+          setVideoName(file.name);
+        } else if (file.type.endsWith("vtt")) {
+          setSubtitlePath(url);
+        }
+      }
     }
-    console.log("videoPath", videoPath);
   };
 
   const getCurrentTime = (e: React.ChangeEvent<HTMLVideoElement>) => {
@@ -36,20 +42,20 @@ const Player = () => {
           name="upload"
           type="file"
           id="upload"
-          accept="video/*"
+          accept="video/*,.vtt"
           onChange={handleVideoUpload}
+          multiple
         ></input>
         <label
           htmlFor="upload"
           className="block shrink-0 rounded-md border-0 bg-sky-500 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-500/75"
         >
-          上传视频
+          上传
         </label>
-        {videoName && (
-          <p className="place-self-center pl-2 text-sm font-semibold">
-            {videoName}
-          </p>
-        )}
+
+        <p className="place-self-center pl-2 text-sm font-semibold">
+          {videoPath ? videoName : "同时选择视频和字幕文件"}
+        </p>
       </div>
       {videoPath && (
         <div className="max-w-screen-xl">
@@ -58,7 +64,9 @@ const Player = () => {
             controls
             src={videoPath}
             onTimeUpdate={getCurrentTime}
-          />
+          >
+            <track default src={subtitlePath} srcLang="en" />
+          </video>
         </div>
       )}
     </div>
