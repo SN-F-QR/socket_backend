@@ -23,6 +23,7 @@ async def handler(websocket):
             if re.match(r"https?:\/\/", message):
                 webbrowser.open_new_tab(message)
             elif re.match(r"\{\"type\":[\s\S]*\}", message):
+                # TODO: type of id/event/progress
                 print(json.loads(message))
 
     except websockets.exceptions.ConnectionClosed:
