@@ -1,18 +1,21 @@
+import os
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 import threading
 import tkinter as tk
+from dotenv import load_dotenv
 
 import sockettest
 from sockettest import send_message_once
 import utility
 from PDFViewer import ContinuousPDFViewer
-from PDFReader import execute_agent
+from PDFReader import Recommender
 
 
 async def do_ocr_for_page_async(page_index, page):
     """
     异步执行 OCR 和 execute_agent 调用。
+    page_index: >= 0 if a full page is passed, -1 if a cropped image is passed
     """
     # 检查缓存
     if page_index >= 0 and page_index in agent_results_cache:
@@ -36,7 +39,7 @@ async def generate_links(text, page_index):
     Call LLM API to generate links from text
     """
     message = await loop.run_in_executor(
-        executor, execute_agent, {"content": '"""' + text + '"""'}
+        executor, recommender.execute_search_agent, {"content": '"""' + text + '"""'}
     )
     # 缓存结果
     if page_index >= 0:
@@ -54,6 +57,11 @@ def send_to_devices(message):
 
 
 if __name__ == "__main__":
+    # Init AI agent
+    load_dotenv("key.env")
+    search_assistant_id = os.getenv("ASSISTANT_ID")
+    recommender = Recommender(search_assistant_id)
+
     agent_results_cache = {}  # 用于缓存每页的 execute_agent 结果
     loop = asyncio.new_event_loop()  # event loop for OCR and AI Agent
     executor = ThreadPoolExecutor()  # executor for sync functions

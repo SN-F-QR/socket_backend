@@ -5,7 +5,8 @@ from tkinter import ttk
 from PIL import Image, ImageTk
 import fitz  # PyMuPDF
 import pytesseract
-from PDFReader import execute_agent
+
+# from PDFReader import execute_agent
 from dotenv import load_dotenv
 from concurrent.futures import ThreadPoolExecutor, Future
 import asyncio
