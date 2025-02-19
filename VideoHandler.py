@@ -1,27 +1,71 @@
 from openai import OpenAI
 from dotenv import load_dotenv
 from PDFReader import Recommender
+import webvtt
+from datetime import datetime, time
+from functools import reduce
 import json
 import re
 import os
 
 
 class VideoHandler:
-    def __init__(self, recommender):
-        self.auto_recommend = {}
-        self.cur_time = 0
-        self.recommender = recommender
-        self.load_auto_recommend()
+    def __init__(self, recommender, vtt_path, section_split=None):
+        self.section_recommend = []  # list of TimeSpan objects
+        self.vtt = webvtt.read(vtt_path)
+        if section_split:
+            self.section_recommend = self.read_sections(section_split)
 
-    def load_auto_recommend(self):
+        self.cur_time = 0
+        self.next_rec_time = 0
+
+        self.recommender = recommender
+
+    def read_sections(self, split_time):
         """
-        Request auto recommendation results from llm
+        Split sections from vtt file and return a list of video sections
+        Split_time: list of the precise start time (%H:%M:%S) of each section
+        return: list of TimeSpan objects for each section
         """
-        sections = self.recommender.execute_search_agent("Divide video").split(",")
-        # sections = '[{"title":"a", "span":"1-2"}, {"title":"b", "span":"2-2"}, {"title":"c", "span":"3-2"}]'
-        sections = json.loads(sections)
-        for section in sections:
-            self.auto_recommend[section["span"].split("-")[0]] = ""
+        sections = []
+        index = -1
+
+        last_end_time = None
+        for caption in self.vtt:
+            start_time = caption.start.split(".")[0]
+            if index + 1 < len(split_time) and split_time[index + 1] == start_time:
+                sections.append(
+                    TimeSpan(datetime.strptime(start_time, "%H:%M:%S").time())
+                )
+                if last_end_time:
+                    sections[index].set_end(
+                        datetime.strptime(last_end_time, "%H:%M:%S").time()
+                    )
+                index += 1
+
+            pure_text = reduce(
+                lambda x, y: x.strip() + " " + y.strip(), caption.text.split("&nbsp;")
+            )  # Clean &nbsp; in text
+            sections[index].transcripts += pure_text
+            last_end_time = caption.end.split(".")[0]
+        sections[index].set_end(datetime.strptime(last_end_time, "%H:%M:%S").time())
+
+        # for section in sections:
+        #     print(section)
+        #     print(section.transcripts)
+
+        return sections
+
+    # def load_section_recommend(self):
+    #     """
+    #     Request section recommendation results from llm
+    #     """
+    #     # sections = '[{"title":"a", "span":"1-2"}, {"title":"b", "span":"2-3"}, {"title":"c", "span":"3-4"}]'
+    #     sections = json.loads(sections)
+    #     for section in sections:
+    #         self.auto_recommend.append(
+    #             TimeSpan(*map(int, re.findall(r"\d+", section["span"])))
+    #         )
 
     def handle_time_change(self, current_time):
         """
@@ -38,9 +82,34 @@ class VideoHandler:
     #     pass
 
 
+# TimeSpan represent a video section
+class TimeSpan:
+    def __init__(self, start):
+        """
+        start: Time object
+        """
+        self.start = start
+
+        self.transcripts = ""
+        self.links = []  # json title/url pairs
+        self.rs_contents = []  # json title/keywords pairs
+
+    def set_end(self, end):
+        assert end > self.start
+        self.end = end
+
+    def __lt__(self, other):
+        """
+        Sort by start time
+        """
+        return self.start < other.start
+
+    def __str__(self):
+        return f"TimeSpan: {self.start} - {self.end}"
+
+
 if __name__ == "__main__":
     load_dotenv("key.env")
     recommender = Recommender(os.getenv("ASSISTANT_ID"))
-    handler = VideoHandler(recommender)
-    handler.load_auto_recommend()
-    print(handler.auto_recommend)
+    video_section = ["00:00:00", "00:00:57", "00:02:34"]  # start time of each section
+    handler = VideoHandler(recommender, "Short_Test_Video.en.vtt", video_section)
