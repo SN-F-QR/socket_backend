@@ -11,8 +11,9 @@ import os
 
 class VideoHandler:
     def __init__(self, recommender, vtt_path, section_split=None):
-        self.section_recommend = []  # list of TimeSpan objects
+        self.section_recommend = []  # list of TimeSpan for each section
         self.vtt = webvtt.read(vtt_path)
+        self.transcripts = None  # list of TimeSpan for each transcript
         if section_split:
             self.section_recommend = self.read_sections(section_split)
 
@@ -34,13 +35,9 @@ class VideoHandler:
         for caption in self.vtt:
             start_time = caption.start.split(".")[0]
             if index + 1 < len(split_time) and split_time[index + 1] == start_time:
-                sections.append(
-                    TimeSpan(datetime.strptime(start_time, "%H:%M:%S").time())
-                )
+                sections.append(TimeSpan(start=start_time))
                 if last_end_time:
-                    sections[index].set_end(
-                        datetime.strptime(last_end_time, "%H:%M:%S").time()
-                    )
+                    sections[index].set_end(last_end_time)
                 index += 1
 
             pure_text = reduce(
@@ -48,11 +45,11 @@ class VideoHandler:
             )  # Clean &nbsp; in text
             sections[index].transcripts += pure_text
             last_end_time = caption.end.split(".")[0]
-        sections[index].set_end(datetime.strptime(last_end_time, "%H:%M:%S").time())
+        sections[index].set_end(last_end_time)
 
-        # for section in sections:
-        #     print(section)
-        #     print(section.transcripts)
+        for section in sections:
+            print(section)
+            print(section.transcripts)
 
         return sections
 
@@ -84,19 +81,25 @@ class VideoHandler:
 
 # TimeSpan represent a video section
 class TimeSpan:
-    def __init__(self, start):
+    def __init__(self, start, end=None):
         """
-        start: Time object
+        start: Time string in format %H:%M:%S
         """
-        self.start = start
+        self.start = self.set_time(start)
+        self.end = None
+        self.set_end(end) if end else None
 
         self.transcripts = ""
         self.links = []  # json title/url pairs
         self.rs_contents = []  # json title/keywords pairs
 
-    def set_end(self, end):
-        assert end > self.start
-        self.end = end
+    def set_time(self, string_time):
+        return datetime.strptime(string_time, "%H:%M:%S").time()
+
+    def set_end(self, string_end):
+        end_time = self.set_time(string_end)
+        assert self.start < end_time
+        self.end = end_time
 
     def __lt__(self, other):
         """
