@@ -44,7 +44,14 @@ class Recommender:
         )
         return search
 
-    def execute_search_agent(self, input):
+    def execute_search_agent(self, text_input):
+        """
+        Send input to the search agent
+        text_input: string contents for agent
+        return: search results in string format "[{},{},{}]"
+        """
+        input = {}
+        input["content"] = text_input
         input["thread_id"] = self.search_thread_id
         tool_map = {tool.name: tool for tool in self.tools}
 

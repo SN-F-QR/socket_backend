@@ -26,7 +26,7 @@ const Player = () => {
   };
 
   const getCurrentTime = (e: React.ChangeEvent<HTMLVideoElement>) => {
-    const curSec = Math.floor(e.target.currentTime);
+    const curSec = Math.round(e.target.currentTime);
     if (curSec !== progress.current) {
       progress.current = curSec;
       sendVideoProgress(curSec);

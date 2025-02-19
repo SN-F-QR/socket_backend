@@ -47,9 +47,11 @@ const sendMessage = (message: string) => {
   }
 };
 
-const sendVideoProgress = (progress: number) => {
-  sendMessage(`{"type": "video", "progress": ${progress}}`);
-};
+const sendVideoProgress = (progress: number) =>
+  sendMessage(`{"type": "time", "value": ${progress}}`);
+
+const sendAction = (action: string) =>
+  sendMessage(`{"type": "action", "value": "${action}"}`);
 
 const closeWebsocket = () => {
   if (
