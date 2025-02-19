@@ -13,7 +13,9 @@ class VideoHandler:
     def __init__(self, recommender, vtt_path, section_split=None):
         self.section_recommend = []  # list of TimeSpan for each section
         self.vtt = webvtt.read(vtt_path)
-        self.transcripts = None  # list of TimeSpan for each transcript
+        self.transcripts = (
+            self.read_transcripts()
+        )  # list of TimeSpan for each transcript
         if section_split:
             self.section_recommend = self.read_sections(section_split)
 
@@ -33,25 +35,44 @@ class VideoHandler:
 
         last_end_time = None
         for caption in self.vtt:
-            start_time = caption.start.split(".")[0]
-            if index + 1 < len(split_time) and split_time[index + 1] == start_time:
+            start_time = caption.start
+            if (
+                index + 1 < len(split_time)
+                and split_time[index + 1] == start_time.split(".")[0]
+            ):
                 sections.append(TimeSpan(start=start_time))
                 if last_end_time:
                     sections[index].set_end(last_end_time)
                 index += 1
 
-            pure_text = reduce(
-                lambda x, y: x.strip() + " " + y.strip(), caption.text.split("&nbsp;")
-            )  # Clean &nbsp; in text
-            sections[index].transcripts += pure_text
-            last_end_time = caption.end.split(".")[0]
+            sections[-1].add_transcript(caption.text)
+            last_end_time = caption.end
         sections[index].set_end(last_end_time)
 
-        for section in sections:
-            print(section)
-            print(section.transcripts)
+        # for section in sections:
+        #     print(section)
+        #     print(section.content)
 
         return sections
+
+    def read_transcripts(self):
+        """
+        Read all transcripts from vtt file
+        """
+        transcripts = []
+        for caption in self.vtt:
+            transcripts.append(TimeSpan(start=caption.start, end=caption.end))
+            transcripts[-1].add_transcript(caption.text)
+
+        return transcripts
+
+    def get_transcript(self, time):
+        """
+        Get the transcript at a certain time
+        """
+        for transcript in self.transcripts:
+            if transcript.within_span(time):
+                return transcript.content
 
     # def load_section_recommend(self):
     #     """
@@ -89,17 +110,29 @@ class TimeSpan:
         self.end = None
         self.set_end(end) if end else None
 
-        self.transcripts = ""
+        self.content = ""
         self.links = []  # json title/url pairs
         self.rs_contents = []  # json title/keywords pairs
 
     def set_time(self, string_time):
-        return datetime.strptime(string_time, "%H:%M:%S").time()
+        return datetime.strptime(string_time.split(".")[0], "%H:%M:%S").time()
 
     def set_end(self, string_end):
         end_time = self.set_time(string_end)
         assert self.start < end_time
         self.end = end_time
+
+    def add_transcript(self, text):
+        pure_text = reduce(
+            lambda x, y: x.strip() + " " + y.strip(), text.split("&nbsp;")
+        )  # Clean &nbsp; in text
+        self.content += pure_text
+
+    def within_span(self, time):
+        """
+        Check if the time is within the span
+        """
+        return self.start <= self.set_time(time) <= self.end
 
     def __lt__(self, other):
         """
@@ -108,11 +141,18 @@ class TimeSpan:
         return self.start < other.start
 
     def __str__(self):
-        return f"TimeSpan: {self.start} - {self.end}"
+        return f"TimeSpan: {self.start} - {self.end} \n Content: {self.content}"
 
 
 if __name__ == "__main__":
+    # TODO: ensure the time accuracy
     load_dotenv("key.env")
     recommender = Recommender(os.getenv("ASSISTANT_ID"))
     video_section = ["00:00:00", "00:00:57", "00:02:34"]  # start time of each section
     handler = VideoHandler(recommender, "Short_Test_Video.en.vtt", video_section)
+    print("Testing read_transcripts:")
+    for transcript in handler.transcripts:
+        print(transcript)
+    print("Testing get_transcript:")
+    print(handler.get_transcript("00:00:45"))
+    print(handler.get_transcript("00:01:45"))
