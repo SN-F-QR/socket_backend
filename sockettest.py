@@ -6,6 +6,8 @@ import json
 
 connected_devices = set()
 # ws_loop = None  # 全局变量，用于保存后台线程的事件循环
+time_callback = None  # handle time change
+# action_callback = None  # handle action
 
 
 async def handler(websocket):
@@ -23,8 +25,12 @@ async def handler(websocket):
             if re.match(r"https?:\/\/", message):
                 webbrowser.open_new_tab(message)
             elif re.match(r"\{\"type\":[\s\S]*\}", message):
-                # TODO: type of id/event/progress
-                print(json.loads(message))
+                data = json.loads(message)
+                if data["type"] == "time":
+                    result = await time_callback(data["value"])
+                    asyncio.create_task(send_message_once(result))
+                # elif data["type"] == "action":
+                #     pass
 
     except websockets.exceptions.ConnectionClosed:
         print(f"Device disconnected: {websocket.remote_address}")
@@ -34,6 +40,9 @@ async def handler(websocket):
 
 
 async def send_message_once(message):
+    """
+    Broadcast a message to all connected devices
+    """
     print("send_message_once() called")  # 新增调试打印
     if connected_devices:
         disconnected = set()

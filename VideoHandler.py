@@ -9,6 +9,7 @@ import re
 import os
 
 
+# TODO: add cache for transcript
 class VideoHandler:
     def __init__(self, recommender, vtt_path, section_split=None):
         self.section_recommend = []  # list of TimeSpan for each section
@@ -19,10 +20,14 @@ class VideoHandler:
         if section_split:
             self.section_recommend = self.read_sections(section_split)
 
-        self.cur_time = 0
-        self.next_rec_time = 0
+        self.last_section = None  # used to compare if the section span has changed
 
         self.recommender = recommender
+
+        # Generate auto recommendation contents
+        for section in self.section_recommend:
+            links = self.request_recommendation(section.content)
+            section.links = json.loads(links)
 
     def read_sections(self, split_time):
         """
@@ -66,32 +71,35 @@ class VideoHandler:
 
         return transcripts
 
-    def get_transcript(self, time):
+    def get_time_span(self, time, span_list):
         """
-        Get the transcript at a certain time
+        Get the transcript at a certain time from the list
         """
-        for transcript in self.transcripts:
-            if transcript.within_span(time):
-                return transcript.content
+        for span in span_list:
+            if span.within_span(time):
+                return span
 
-    # def load_section_recommend(self):
-    #     """
-    #     Request section recommendation results from llm
-    #     """
-    #     # sections = '[{"title":"a", "span":"1-2"}, {"title":"b", "span":"2-3"}, {"title":"c", "span":"3-4"}]'
-    #     sections = json.loads(sections)
-    #     for section in sections:
-    #         self.auto_recommend.append(
-    #             TimeSpan(*map(int, re.findall(r"\d+", section["span"])))
-    #         )
+    def request_recommendation(self, content):
+        """
+        Request section recommendation results from llm
+        """
+        wrapped_content = "<video transcript>" + content + "</video transcript>"
+        result = self.recommender.execute_search_agent(wrapped_content)
+        print(f"LLM outputs:\n {result}")
+        return result
 
-    def handle_time_change(self, current_time):
+    async def handle_time_change(self, current_time):
         """
         Judge if the current video progress should trigger auto recommendation
         """
-        self.cur_time = current_time
-        recommend = self.auto_recommend[current_time]
-        return recommend if recommend else None
+        time_value = int(current_time)
+        format_time = f"{time_value // 3600:02d}:{(time_value % 3600) // 60:02d}:{time_value % 60:02d}"
+        cur_section = self.get_time_span(format_time, self.section_recommend)
+        if cur_section and cur_section != self.last_section:
+            self.last_section = cur_section
+            # return "test result"
+            return cur_section.links  # TODO: return all things
+        return None
 
     # def handle_user_event(self, event):
     #     """
@@ -100,7 +108,7 @@ class VideoHandler:
     #     pass
 
 
-# TimeSpan represent a video section
+# TimeSpan represent a video section or a transcript
 class TimeSpan:
     def __init__(self, start, end=None):
         """
@@ -141,18 +149,18 @@ class TimeSpan:
         return self.start < other.start
 
     def __str__(self):
-        return f"TimeSpan: {self.start} - {self.end} \n Content: {self.content}"
+        return f"TimeSpan: {self.start} - {self.end} \nContent: {self.content}\n"
 
 
 if __name__ == "__main__":
     # TODO: ensure the time accuracy
     load_dotenv("key.env")
-    recommender = Recommender(os.getenv("ASSISTANT_ID"))
+    recommender = Recommender(os.getenv("VIDEO_ASSISTANT_ID"))
     video_section = ["00:00:00", "00:00:57", "00:02:34"]  # start time of each section
     handler = VideoHandler(recommender, "Short_Test_Video.en.vtt", video_section)
-    print("Testing read_transcripts:")
-    for transcript in handler.transcripts:
-        print(transcript)
-    print("Testing get_transcript:")
-    print(handler.get_transcript("00:00:45"))
-    print(handler.get_transcript("00:01:45"))
+    # print("Testing read_transcripts:")
+    # for transcript in handler.transcripts:
+    #     print(transcript)
+    # print("Testing get_transcript:")
+    # print(handler.get_transcript("00:00:45"))
+    # print(handler.get_transcript("00:01:45"))
