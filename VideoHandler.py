@@ -155,7 +155,7 @@ class TimeSpan:
 if __name__ == "__main__":
     # TODO: ensure the time accuracy
     load_dotenv("key.env")
-    recommender = Recommender(os.getenv("VIDEO_ASSISTANT_ID"))
+    recommender = Recommender(search_assistant_id=os.getenv("VIDEO_ASSISTANT_ID"))
     video_section = ["00:00:00", "00:00:57", "00:02:34"]  # start time of each section
     handler = VideoHandler(recommender, "Short_Test_Video.en.vtt", video_section)
     # print("Testing read_transcripts:")

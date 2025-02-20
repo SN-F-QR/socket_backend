@@ -13,15 +13,20 @@ import re
 
 
 class Recommender:
-    def __init__(self, search_assistant_id, normal_assistant_id=None):
-        self.search_assistant_id = search_assistant_id
+    def __init__(self, search_assistant_id=None, normal_assistant_id=None):
         self.client = OpenAI()
-        self.search_thread_id = self.create_thread()
+        self.search_assistant_id = search_assistant_id
+        self.normal_assistant_id = normal_assistant_id
 
-        self.search_agent = OpenAIAssistantRunnable(
-            assistant_id=search_assistant_id,
-            as_agent=True,
-        )
+        if self.search_assistant_id:
+            self.search_agent, self.search_thread_id = self.create_assistant(
+                self.search_assistant_id
+            )
+
+        if self.normal_assistant_id:
+            self.normal_agent, self.normal_thread_id = self.create_assistant(
+                self.normal_assistant_id
+            )
 
         # init tools for LLM functions
         self.tools = []
@@ -32,6 +37,15 @@ class Recommender:
         thread_id = empty_thread.id
         print(f"Empty thread created: {thread_id}")
         return thread_id
+
+    def create_assistant(self, assistant_id):
+        return (
+            OpenAIAssistantRunnable(
+                assistant_id=assistant_id,
+                as_agent=True,
+            ),
+            self.create_thread(),
+        )
 
     def init_search_tool(self):
         search = GoogleSerperAPIWrapper()
@@ -44,12 +58,28 @@ class Recommender:
         )
         return search
 
+    def execute_normal_agent(self, text_input):
+        if not self.normal_assistant_id:
+            raise AttributeError("Normal Assistant not found")
+        response = self.normal_agent.invoke(
+            {"content": text_input, "thread_id": self.normal_thread_id}
+        )
+        print(response.return_values["output"])
+
+        json = re.search(
+            r"\[\s*\{[\s\S]*?\}\s*\]", response.return_values["output"]
+        ).group()
+
+        return json
+
     def execute_search_agent(self, text_input):
         """
         Send input to the search agent
         text_input: string contents for agent
         return: search results in string format "[{},{},{}]"
         """
+        if not self.search_assistant_id:
+            raise AttributeError("Search Agent not found")
         input = {}
         input["content"] = text_input
         input["thread_id"] = self.search_thread_id
@@ -205,13 +235,15 @@ class Recommender:
 # message = agent_executor.invoke({"content": md_uid_text})
 
 if __name__ == "__main__":
-    test_input = {
-        "content": '"""Within-subjects and between-subjects are two fundamental experimental design approaches in research methodology. In a within-subjects design, all participants experience every experimental condition, serving as their own control group, which leads to higher statistical power and requires fewer participants. This design is particularly effective at controlling individual differences and detecting small but meaningful changes in responses. However, it can be vulnerable to fatigue and carryover effects when participants undergo multiple treatments. In contrast, between-subjects design involves dividing participants into separate groups, with each group experiencing only one condition. This approach is particularly useful when studying treatments that cannot be reversed or when researchers want to avoid practice effects1. While it requires more participants to achieve statistical significance and may be affected by individual differences between groups, it offers the advantage of shorter experimental duration per participant and eliminates concerns about carryover effects. The choice between these designs often depends on specific research needs, such as the nature of the treatment, available resources, and whether the potential for practice or fatigue effects could impact results. Between-subjects design is typically preferred when exposure to one condition might influence responses to others, while within-subjects design is more suitable when studying changes or differences within individual participants over time."""'
-    }
+    test_input = '"""Within-subjects and between-subjects are two fundamental experimental design approaches in research methodology. In a within-subjects design, all participants experience every experimental condition, serving as their own control group, which leads to higher statistical power and requires fewer participants. This design is particularly effective at controlling individual differences and detecting small but meaningful changes in responses. However, it can be vulnerable to fatigue and carryover effects when participants undergo multiple treatments. In contrast, between-subjects design involves dividing participants into separate groups, with each group experiencing only one condition. This approach is particularly useful when studying treatments that cannot be reversed or when researchers want to avoid practice effects1. While it requires more participants to achieve statistical significance and may be affected by individual differences between groups, it offers the advantage of shorter experimental duration per participant and eliminates concerns about carryover effects. The choice between these designs often depends on specific research needs, such as the nature of the treatment, available resources, and whether the potential for practice or fatigue effects could impact results. Between-subjects design is typically preferred when exposure to one condition might influence responses to others, while within-subjects design is more suitable when studying changes or differences within individual participants over time. Let\' think step by step,"""'
 
     load_dotenv("key.env")
-    assistant_id = os.getenv("ASSISTANT_ID")
-    recommender = Recommender(assistant_id)
-    message = recommender.execute_search_agent(test_input)
-    links = json.loads(message)
-    print(links)
+    recommender = Recommender(
+        # search_assistant_id=os.getenv("ASSISTANT_ID"),
+        normal_assistant_id=os.getenv("NORMAL_ASSISTANT_ID"),
+    )
+    # message = recommender.execute_search_agent(test_input)
+    message = recommender.execute_normal_agent(test_input)
+    print(message)
+    # links = json.loads(message)
+    # print(links)
