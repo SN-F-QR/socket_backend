@@ -65,10 +65,10 @@ if __name__ == "__main__":
 
     load_dotenv("key.env")
 
-    if args.mode == "r":
+    if args.type == "r":
         # Init AI agent
         search_assistant_id = os.getenv("ASSISTANT_ID")
-        recommender = Recommender(search_assistant_id)
+        recommender = Recommender(search_assistant_id=search_assistant_id)
 
         agent_results_cache = {}  # 用于缓存每页的 execute_agent 结果
         loop = asyncio.new_event_loop()  # event loop for OCR and AI Agent
@@ -93,8 +93,8 @@ if __name__ == "__main__":
             ),
         )
         root.mainloop()
-    elif args.mode == "v":
-        recommender = Recommender(os.getenv("VIDEO_ASSISTANT_ID"))
+    elif args.type == "v":
+        recommender = Recommender(search_assistant_id=os.getenv("VIDEO_ASSISTANT_ID"))
         video_section = [
             "00:00:00",
             "00:00:57",

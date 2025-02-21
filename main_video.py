@@ -11,7 +11,7 @@ from VideoHandler import VideoHandler
 
 if __name__ == "__main__":
     load_dotenv("key.env")
-    recommender = Recommender(os.getenv("VIDEO_ASSISTANT_ID"))
+    recommender = Recommender(search_assistant_id=os.getenv("VIDEO_ASSISTANT_ID"))
     video_section = [
         "00:00:00",
         "00:00:57",
