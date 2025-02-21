@@ -36,10 +36,24 @@ class SerpapiWrapper:
         }
         search = GoogleSearch(params)
         return search.get_dict()
+    def SearchRestaurant(self,Location):
+        params = {
+            "engine": "google_local",
+            "google_domain": "google.com",
+            "hl": "en",
+            "gl": "jp",
+            "api_key": self.api_key,
+            "q": "restaurant",
+            "Location": Location
+        }
+        search = GoogleSearch(params)
+        return search.get_dict()
+
 
 if __name__ == "__main__":
     load_dotenv("key.env")
     serpapi = SerpapiWrapper()
     #result = serpapi.SearchHotel("Tokyo","2025-10-10","2025-10-11")
-    result = serpapi.SearchFlight("HND","AUS","2025-10-10","2025-10-11")
+    #result = serpapi.SearchFlight("HND","AUS","2025-10-10","2025-10-11")
+    result = serpapi.SearchRestaurant("Tokyo")
     print(result)
