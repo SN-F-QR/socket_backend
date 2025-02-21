@@ -35,10 +35,7 @@ const Player = () => {
   };
 
   return (
-    <div
-      className="flex h-screen basis-1/2 flex-col justify-center space-y-3 place-self-center p-2"
-      shrink-0
-    >
+    <div className="flex h-screen shrink-0 basis-1/2 flex-col justify-center space-y-3 place-self-center p-2">
       <div className="justify-left flex">
         <input
           className="hidden"
