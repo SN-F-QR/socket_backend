@@ -86,6 +86,9 @@ class Recommender:
         tool_map = {tool.name: tool for tool in self.tools}
 
         response = self.search_agent.invoke(input)
+        # 如果response返回type是找餐馆，call serpapiWarapper.SearchRestaurant
+        # 如果response返回type是找酒店，call serpapiWarapper.SearchHotel
+        # 如果response返回type是找航班，call serpapiWarapper.SearchFlight
         while not isinstance(response, AgentFinish):
             tool_outputs = []
             for action in response:
