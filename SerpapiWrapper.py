@@ -41,5 +41,5 @@ if __name__ == "__main__":
     load_dotenv("key.env")
     serpapi = SerpapiWrapper()
     #result = serpapi.SearchHotel("Tokyo","2025-10-10","2025-10-11")
-    result = serpapi.SearchFlight("Tokyo","HND","AUS","2025-10-10","2025-10-11")
+    result = serpapi.SearchFlight("HND","AUS","2025-10-10","2025-10-11")
     print(result)
