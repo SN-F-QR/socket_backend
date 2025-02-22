@@ -13,7 +13,7 @@ const App = () => {
   }, []);
 
   return (
-    <div className="flex h-screen justify-evenly space-x-5 p-4">
+    <div className="flex h-screen justify-evenly space-x-5 p-2">
       <Player />
       <Note />
     </div>
