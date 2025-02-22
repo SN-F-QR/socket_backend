@@ -43,7 +43,7 @@ const Note = () => {
   });
 
   return (
-    <div className="relative overflow-auto rounded-md border">
+    <div className="relative w-full overflow-y-scroll rounded-md border">
       <div className="sticky top-0 z-50 px-2 py-2">
         <MenuBar editor={editor as Editor} />
       </div>
