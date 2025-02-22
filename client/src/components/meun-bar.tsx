@@ -1,6 +1,8 @@
 import { Editor } from "@tiptap/react";
 type menuProps = {
   editor: Editor;
+  disableButton: boolean;
+  h1Toggle: () => void;
 };
 
 type ButtonStyle = {
@@ -19,22 +21,27 @@ const MenuBar = (props: menuProps) => {
     buttonCSS[isActive.toString() as keyof ButtonStyle];
 
   return (
-    <div className="flex min-h-12 justify-between rounded-md border shadow backdrop-blur-sm">
+    <div className="flex min-h-12 justify-between rounded-md border shadow backdrop-blur-md">
       <div className="flex space-x-2">
         <span className=""></span>
         <button
           className={getButtonCSS(
             props.editor.isActive("heading", { level: 1 }),
           )}
-          onClick={() =>
-            props.editor.chain().focus().toggleHeading({ level: 1 }).run()
-          }
+          onClick={() => {
+            if (!props.editor.isActive("heading", { level: 1 })) {
+              props.h1Toggle();
+            }
+            props.editor.chain().focus().toggleHeading({ level: 1 }).run();
+          }}
+          disabled={props.disableButton}
         >
           H1
         </button>
         <button
           className={getButtonCSS(props.editor.isActive("bulletList"))}
           onClick={() => props.editor.chain().focus().toggleBulletList().run()}
+          disabled={props.disableButton}
         >
           Bullet list
         </button>
