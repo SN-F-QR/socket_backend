@@ -48,7 +48,7 @@ const Player = () => {
         ></input>
         <label
           htmlFor="upload"
-          className="block shrink-0 rounded-md border-0 bg-sky-500 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-500/75"
+          className="block shrink-0 rounded-md border-0 bg-sky-500 px-4 py-2 text-sm font-semibold text-white transition duration-300 hover:bg-sky-600"
         >
           上传
         </label>
