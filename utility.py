@@ -1,6 +1,5 @@
-import fitz  # PyMuPDF
 from PIL import Image
-import pytesseract
+import re
 
 
 def ocr_page(page):
@@ -8,6 +7,9 @@ def ocr_page(page):
     对指定页进行 OCR
     page: from fitz.open
     """
+    import fitz  # PyMuPDF
+    import pytesseract
+
     if isinstance(page, fitz.Page):
         zoom_factor = 1.5
         mat = fitz.Matrix(zoom_factor, zoom_factor)
@@ -24,3 +26,8 @@ def ocr_page(page):
 
     # OCR 识别
     return pytesseract.image_to_string(pil_img, lang="eng")
+
+
+def extract_json_array(text):
+    json = re.search(r"\[\s*\{[\s\S]*?\}\s*\]", text).group()
+    return json
