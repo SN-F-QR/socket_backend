@@ -2,12 +2,13 @@ import os
 from serpapi import GoogleSearch
 from dotenv import load_dotenv
 
+
 class SerpapiWrapper:
     def __init__(self):
         self.base_url = "https://serpapi.com/search?engine="
         self.api_key = os.getenv("SERPAPI_API_KEY")
 
-    def SearchHotel(self,query,check_in,check_out):
+    def SearchHotel(self, query, check_in, check_out):
         params = {
             "engine": "google_hotels",
             "q": query,
@@ -21,7 +22,8 @@ class SerpapiWrapper:
         }
         search = GoogleSearch(params)
         return search.get_dict()
-    def SearchFlight(self,_departure_id,_arrival_id,_outbound_date,_return_date):
+
+    def SearchFlight(self, _departure_id, _arrival_id, _outbound_date, _return_date):
         params = {
             "engine": "google_flights",
             "hl": "en",
@@ -32,11 +34,12 @@ class SerpapiWrapper:
             "departure_id": _departure_id,
             "arrival_id": _arrival_id,
             "outbound_date": _outbound_date,
-            "return_date": _return_date
+            "return_date": _return_date,
         }
         search = GoogleSearch(params)
         return search.get_dict()
-    def SearchRestaurant(self,Location):
+
+    def SearchRestaurant(self, Location):
         params = {
             "engine": "google_local",
             "google_domain": "google.com",
@@ -44,7 +47,7 @@ class SerpapiWrapper:
             "gl": "jp",
             "api_key": self.api_key,
             "q": "restaurant",
-            "Location": Location
+            "Location": Location,
         }
         search = GoogleSearch(params)
         return search.get_dict()
@@ -53,7 +56,7 @@ class SerpapiWrapper:
 if __name__ == "__main__":
     load_dotenv("key.env")
     serpapi = SerpapiWrapper()
-    #result = serpapi.SearchHotel("Tokyo","2025-10-10","2025-10-11")
-    #result = serpapi.SearchFlight("HND","AUS","2025-10-10","2025-10-11")
+    # result = serpapi.SearchHotel("Tokyo","2025-10-10","2025-10-11")
+    # result = serpapi.SearchFlight("HND","AUS","2025-10-10","2025-10-11")
     result = serpapi.SearchRestaurant("Tokyo")
     print(result)
