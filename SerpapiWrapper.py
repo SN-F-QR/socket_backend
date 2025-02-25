@@ -1,9 +1,11 @@
+import asyncio
 import os
 import json
 from serpapi import GoogleSearch
 from dotenv import load_dotenv
-
-from sockettest import send_message_once
+import keyboard
+#import sockettest
+#from sockettest import send_message_once
 
 
 class SerpapiWrapper:
@@ -106,7 +108,10 @@ if __name__ == "__main__":
     load_dotenv("key.env")
     serpapi = SerpapiWrapper()
     result = serpapi.SearchHotel("Tokyo","2025-10-10","2025-10-11")
+
     #result = serpapi.SearchFlight("HND","AUS","2025-10-10","2025-10-11")
     #result = serpapi.SearchRestaurant("Tokyo")
 
     print(result)
+
+

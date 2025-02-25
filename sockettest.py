@@ -4,6 +4,10 @@ import webbrowser
 import re
 import json
 
+from dotenv import load_dotenv
+
+from SerpapiWrapper import SerpapiWrapper
+
 connected_devices = set()
 # ws_loop = None  # 全局变量，用于保存后台线程的事件循环
 time_callback = None  # handle time change
@@ -15,7 +19,8 @@ async def handler(websocket):
     print(
         f"Device connected from {websocket.remote_address}, Total: {len(connected_devices)}"
     )
-
+    serpapi = SerpapiWrapper()
+    await send_message_once( serpapi.SearchHotel("Tokyo","2025-10-10","2025-10-11"))
     try:
         websocket.ping_interval = 20  # Seconds between pings
         websocket.ping_timeout = 15  # Seconds to wait for pong response
@@ -103,6 +108,7 @@ async def heartbeat():
 
 
 async def start():
+    load_dotenv("key.env")
     while True:  # Continuous server operation
         try:
             server = await websockets.serve(
