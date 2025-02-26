@@ -28,6 +28,11 @@ npm run dev
 
 在[Postman](https://www.postman.com/)新建一个 socket 任务
 
+### Test in Python
+
+Run `main_video.py` as socket test server
+Run `socket_client_test.py` to send test case to server and check results
+
 ## 清单
 
 - Http 连接到 OpenAI，将 OCR 内容传给 OpenAI 并接收返回
