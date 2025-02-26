@@ -15,6 +15,7 @@ class ChatRecommender:
         self.prompts = {
             "normal": self.read_prompt("normal"),
             "serp": self.read_prompt("serp"),
+            "serper": self.read_prompt("serper"),
         }
         self.serp_wrapper = SerpapiWrapper()
 
@@ -37,8 +38,14 @@ class ChatRecommender:
         )
         return completion
 
-    # async def request_widgets(self, text_input):
-    #     response = await self.create_chat("normal", text_input)
+    async def request_widgets(self, text_input):
+        response = await self.create_chat("normal", text_input)
+        widgets = json.loads(extract_json_array(response.choices[0].message.content))
+        try:
+            assert widgets is not None and len(widgets) > 0
+            return widgets
+        except AssertionError:
+            print("No widgets found in response.")
 
     async def request_serp(self, text_input):
         """
@@ -61,6 +68,14 @@ class ChatRecommender:
         except AssertionError:
             print("API not found, check LLM response if it is correct.")
 
+    async def request_serper(self, text_input):
+        response = await self.create_chat("serper", text_input)
+        args = json.loads(extract_json_array(response.choices[0].message.content))
+        list_args = list(map(lambda arg: arg["keyword"].strip(), args))
+        # TODO: call serper api using args
+        print(f"Serper Args: {list_args}")
+        return list_args
+
     def format_text(self, text):
         return "<plan>" + text + "</plan>"
 
@@ -73,7 +88,10 @@ if __name__ == "__main__":
     async def test_normal():
         for case in test_case["content"]:
             print(f"User:\n{case}")
-            response = await recommender.create_chat("normal", case)
+            normal_res, serper_res = await asyncio.gather(
+                recommender.create_chat("normal", case),
+                recommender.request_serper(case),
+            )
 
     def test_serp():
         for case in test_case["content"]:
