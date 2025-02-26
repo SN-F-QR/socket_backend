@@ -1,8 +1,9 @@
-from openai import OpenAI
+from openai import AsyncOpenAI
 import os
 import pandas as pd
 from dotenv import load_dotenv
 import json
+import asyncio
 
 from SerpapiWrapper import SerpapiWrapper
 from utility import extract_json_array
@@ -10,7 +11,7 @@ from utility import extract_json_array
 
 class ChatRecommender:
     def __init__(self):
-        self.client = OpenAI()
+        self.client = AsyncOpenAI()
         self.prompts = {
             "normal": self.read_prompt("normal"),
             "serp": self.read_prompt("serp"),
@@ -21,10 +22,10 @@ class ChatRecommender:
         with open(f"prompts/{name}.txt", "r") as file:
             return file.read()
 
-    def create_chat(self, ai_name, text_input):
+    async def create_chat(self, ai_name, text_input):
         assert self.prompts.keys().__contains__(ai_name)
         format_input = self.format_text(text_input)
-        completion = self.client.chat.completions.create(
+        completion = await self.client.chat.completions.create(
             model="gpt-4o",
             messages=[
                 {"role": "developer", "content": self.prompts[ai_name]},
@@ -36,8 +37,14 @@ class ChatRecommender:
         )
         return completion
 
-    def request_serp(self, text_input):
-        response = self.create_chat("serp", text_input)
+    # async def request_widgets(self, text_input):
+    #     response = await self.create_chat("normal", text_input)
+
+    async def request_serp(self, text_input):
+        """
+        Request serp api based on the response from LLM.
+        """
+        response = await self.create_chat("serp", text_input)
         args = json.loads(extract_json_array(response.choices[0].message.content))
         if args is None or len(args) == 0:
             print("There is no need to call serp api.")
@@ -52,7 +59,7 @@ class ChatRecommender:
             target_func = getattr(self.serp_wrapper, api_name)
             return target_func(*api_args)
         except AssertionError:
-            print("API not found")
+            print("API not found, check LLM response if it is correct.")
 
     def format_text(self, text):
         return "<plan>" + text + "</plan>"
@@ -63,13 +70,10 @@ if __name__ == "__main__":
     recommender = ChatRecommender()
     test_case = pd.read_csv("test_case.csv")
 
-    def test_normal():
+    async def test_normal():
         for case in test_case["content"]:
             print(f"User:\n{case}")
-            response = recommender.create_chat("normal", case)
-            # print(
-            #     f"{response.choices[0].message.role}:\n{response.choices[0].message.content}"
-            # )
+            response = await recommender.create_chat("normal", case)
 
     def test_serp():
         for case in test_case["content"]:
@@ -77,4 +81,5 @@ if __name__ == "__main__":
             response = recommender.request_serp(case)
             print(f"Response:\n{response}")
 
-    test_serp()
+    # test_serp()
+    asyncio.run(test_normal())
