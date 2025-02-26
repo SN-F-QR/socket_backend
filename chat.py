@@ -60,11 +60,14 @@ class ChatRecommender:
         try:
             api_name = args[0]["tool"]
             assert api_name in ["SearchHotel", "SearchFlight", "SearchRestaurant"]
-            api_args = map(lambda arg: arg.strip(), args[0]["keywords"].split(","))
+            api_args = list(
+                map(lambda arg: arg.strip(), args[0]["keywords"].split(","))
+            )
 
             print(f"API: {api_name}, Args: {api_args}")
             target_func = getattr(self.serp_wrapper, api_name)
-            return target_func(*api_args)
+            loop = asyncio.get_event_loop()
+            return await loop.run_in_executor(None, target_func, *api_args)
         except AssertionError:
             print("API not found, check LLM response if it is correct.")
 
@@ -93,11 +96,11 @@ if __name__ == "__main__":
                 recommender.request_serper(case),
             )
 
-    def test_serp():
-        for case in test_case["content"]:
-            print(f"User:\n{case}")
-            response = recommender.request_serp(case)
-            print(f"Response:\n{response}")
+    async def test_serp():
+        case = test_case["content"][1]
+        print(f"User:\n{case}")
+        response = await recommender.request_serp(case)
+        print(f"Response:\n{response}")
 
-    # test_serp()
-    asyncio.run(test_normal())
+    asyncio.run(test_serp())
+    # asyncio.run(test_normal())
