@@ -40,7 +40,9 @@ async def handler(websocket):
                         send_message_once(
                             await rec_callback(data["value"]), "pre-defined"
                         ),
-                        send_message_once(await serp_callback(data["value"])),
+                        send_message_once(
+                            await serp_callback(data["value"])
+                        ),  # handled in serpapiwarpper
                         send_message_once(
                             await serper_callback(data["value"]), "serper"
                         ),
@@ -53,13 +55,18 @@ async def handler(websocket):
         print(f"Remaining Devices: {len(connected_devices)}")
 
 
-async def send_message_once(message, type=None):
+async def send_message_once(message, type=None, target=""):
     """
     Broadcast a message to all connected devices
     type: type of message
+    target: target for defined objects
     """
     print("send_message_once() called")  # 新增调试打印
-    format_message = json.dumps({"target": type, "value": message}) if type else message
+    format_message = (
+        json.dumps({"type": type, "target": target, "value": message})
+        if type
+        else message
+    )
 
     if connected_devices:
         disconnected = set()

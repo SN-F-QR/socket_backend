@@ -31,7 +31,11 @@ class SerpapiWrapper:
 
         data = json.loads(search.get_raw_json())
         # return data['search_metadata']['prettify_html_file']
-        formatted_output = {"target": "hotel", "value": self.GetHotelResult(data)}
+        formatted_output = {
+            "type": "defined",
+            "target": "hotel",
+            "value": self.GetHotelResult(data),
+        }
         json_str = json.dumps(formatted_output)
         # send_message_once(json_str)
         return json_str
@@ -52,7 +56,9 @@ class SerpapiWrapper:
         search = GoogleSearch(params)
         data = json.loads(search.get_raw_json())
         ## TODO: Extract the best flight information
-        return json.dumps({"target": "flight", "value": data["best_flights"]})
+        return json.dumps(
+            {"type": "defined", "target": "flight", "value": data["best_flights"]}
+        )
 
     def SearchRestaurant(self, Location):
         params = {
@@ -69,6 +75,7 @@ class SerpapiWrapper:
         ## TODO: Extract the restaurant information
         return json.dumps(
             {
+                "type": "defined",
                 "target": "restaurant",
                 "value": data["search_metadata"]["google_local_url"],
             }
