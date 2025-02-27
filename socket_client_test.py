@@ -12,7 +12,8 @@ async def connect(message):
 
 
 if __name__ == "__main__":
-    test_case = pd.read_csv("test_case.csv")
-    case = test_case["content"][1]
+    test_case = pd.read_csv("test_case.csv", index_col=0)
+    case = test_case.loc["hotel", "content"]
+    print(case)
 
     asyncio.run(connect(json.dumps({"type": "recommend", "value": case})))
