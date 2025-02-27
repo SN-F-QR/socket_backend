@@ -2,14 +2,15 @@ import { useRef } from "react";
 import { useEditor, EditorContent, Editor, NodePos } from "@tiptap/react";
 import Document from "@tiptap/extension-document";
 import Paragraph from "@tiptap/extension-paragraph";
-import Heading from "@tiptap/extension-heading";
 import Text from "@tiptap/extension-text";
 import BulletList from "@tiptap/extension-bullet-list";
 import ListItem from "@tiptap/extension-list-item";
 import { Color } from "@tiptap/extension-color";
 import TextStyle from "@tiptap/extension-text-style";
 
+import shortUUID from "short-uuid";
 import MenuBar from "./meun-bar";
+import { CustomHeading } from "./custom-extension";
 
 type EditorWrap = {
   editor: Editor;
@@ -19,7 +20,7 @@ const Note = () => {
   const extensions = [
     Document,
     Paragraph,
-    Heading.configure({ levels: [1] }),
+    CustomHeading,
     BulletList,
     Text,
     ListItem,
@@ -28,9 +29,16 @@ const Note = () => {
   ];
 
   const typingNewH1 = useRef<boolean>(false);
+  const newH1Id = useRef<string>("");
   const newH1ByButton = useRef<boolean>(false);
 
   const h1Toggle = () => (newH1ByButton.current = true);
+
+  const resetStatus = () => {
+    typingNewH1.current = false;
+    newH1Id.current = "";
+    newH1ByButton.current = false;
+  };
 
   /**
    * When typing new H1, the color will be gray and activate the recommendation after press "Enter"
@@ -39,60 +47,88 @@ const Note = () => {
    */
   const onUpdate = ({ editor }: EditorWrap) => {
     const updatePos: number = editor.state.selection.$head.pos; // Pos of ProseMirror Node
+    // Use $pos to get the current NodePos in Tiptap, then can revise a many things
+    const curNode: NodePos = editor.$pos(updatePos);
+
+    // 1. Check if typing H1
     if (editor.isActive("heading", { level: 1 })) {
-      // Use $pos to get the current NodePos in Tiptap, then can revise a many things
-      const node = editor.$pos(updatePos);
+      // 1.5. Check if the first time
       if (!typingNewH1.current) {
-        if (node.textContent === "") {
-          // True new H1
-          editor.commands.setColor("gray");
-        } else if (newH1ByButton.current) {
-          // New H1 converted from paragraph by button
-          newH1ByButton.current = false;
-          // Set the H1 to gray color
+        // 2. Check if the H1 has any content, if not, it's a new H1
+        if (curNode.textContent !== "") {
+          // 2.5 If has content, check if it's converted by button so it's a new H1
+          if (newH1ByButton.current) {
+            console.log("New H1 by button");
+            // New H1 converted from paragraph by button
+            // Set the text to gray color
+          } else {
+            return;
+          }
+        }
+        // We confirmed it's a new H1, start to handle status
+        newH1ByButton.current = false;
+        typingNewH1.current = true;
+        // 3. judge if the new H1 is deleted and retyped, or just a brand new H1
+        if (curNode.attributes.id === "114514") {
+          // if it is a brand new H1
+          const newID: string = shortUUID.generate();
+          newH1Id.current = newID;
+          editor.commands.setNode("heading", { level: 1, id: newID }); // since node.setAttributes has bug in current version
+          console.log("A brand new H1 created with id: ", newID);
+        } else {
+          newH1Id.current = curNode.attributes.id;
+          console.log("A H1 retyped with id: ", curNode.attributes.id);
+        }
+        editor.commands.setColor("gray");
+        // Change the color at last, since it will call onUpdate again!
+        if (curNode.textContent !== "") {
+          editor
+            .chain()
+            .setNodeSelection(curNode.from)
+            .setColor("gray")
+            .setTextSelection(curNode.to - 1)
+            .run();
+        }
+      } else {
+        // 4. Now the status is typing new H1, check if still typing the same one
+        if (curNode.attributes.id !== newH1Id.current) {
+          resetStatus();
+          console.log(
+            "Firstly create new H1, then go to other H1 and type, so the status is canceled",
+          );
+        }
+      }
+    } else if (editor.isActive("paragraph") && typingNewH1.current) {
+      console.log("typing a paragraph after h1");
+
+      // 5. Now started to type a para after H1, check if it's a **NEW** paragraph after the new H1
+      try {
+        const beforeNode: NodePos | null = curNode.before;
+        if (
+          curNode.textContent === "" && // Double check if it's a new paragraph
+          beforeNode &&
+          beforeNode.textContent !== "" && // Avoid empty H1
+          beforeNode.attributes.id === newH1Id.current // check if this paragraph after the new H1
+        ) {
+          resetStatus();
+          // finally set the H1 to black color since it will call onUpdate again!
           editor
             .chain()
             .focus()
-            .setNodeSelection(node.from)
-            .setColor("gray")
-            .setTextSelection(node.to - 1)
+            .setNodeSelection(beforeNode.from)
+            .unsetColor()
+            .setTextSelection(curNode.from)
             .run();
-        } else {
-          return; // Do nothing if it's not a new H1
+          console.log("Do recommendation?");
+        } // else tying some other paragraph, I do not cancel the status, and then could return to the new H1
+      } catch (e) {
+        if (e instanceof RangeError) {
+          console.log("The H1 is the first node and deleted");
         }
-        // else {
-        //   // Edit the existing H1 (better to be handled manually by users)
-        //   editor
-        //     .chain()
-        //     .focus()
-        //     .setNodeSelection(node.from)
-        //     .setColor("gray")
-        //     .setTextSelection(node.to - 1)
-        //     .run();
-        // }
-        console.log("typingNewH1 set to true");
-        typingNewH1.current = true;
+        resetStatus();
       }
-    } else if (editor.isActive("paragraph") && typingNewH1.current) {
-      console.log("typing new paragraph after h1");
-      const curNode: NodePos = editor.$pos(updatePos);
-      const beforeNode: NodePos | null = curNode.before;
-      if (
-        curNode.textContent === "" && // Double check if it's a new paragraph
-        beforeNode &&
-        beforeNode.textContent !== "" // Avoid empty H1
-      ) {
-        typingNewH1.current = false;
-        // set the H1 to black color
-        editor
-          .chain()
-          .focus()
-          .setNodeSelection(beforeNode.from)
-          .unsetColor()
-          .setTextSelection(curNode.from)
-          .run();
-        console.log("Do recommendation?");
-      }
+    } else {
+      resetStatus();
     }
   };
 
@@ -101,20 +137,8 @@ const Note = () => {
    * Also set the H1 color back to black
    */
   const onTransaction = ({ editor }: EditorWrap) => {
-    // still has some exceptions, if user click other H1 while typing new H1, prepare is not cancelled
-    if (
-      typingNewH1.current &&
-      !editor.isActive("heading", { level: 1 }) &&
-      editor.state.selection.$head.parent.childCount > 0
-    ) {
-      // Cancel the prepare for recommendation if user do not type "Enter" after H1
-      console.log("transaction to other than new p after h1");
-      // Set all H1 to black cause there is no idea where is now
-      editor.$nodes("heading", { level: 1 })?.forEach((node) => {
-        editor.chain().setNodeSelection(node.from).unsetColor().run();
-      });
-      editor.commands.focus();
-      typingNewH1.current = false;
+    if (!typingNewH1.current && editor.isActive("heading", { level: 1 })) {
+      console.log("Heading ID:", editor.getAttributes("heading").id);
     }
   };
 

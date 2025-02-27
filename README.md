@@ -33,9 +33,3 @@ npm run dev
 Run `main_video.py` as socket test server
 
 Run `socket_client_test.py` to send test case to server and check results in all clients
-
-## 清单
-
-- Http 连接到 OpenAI，将 OCR 内容传给 OpenAI 并接收返回
-- 完善跟 hololens 的 socket 通讯
-- Scrollbar detect
