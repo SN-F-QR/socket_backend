@@ -31,7 +31,8 @@ npm run dev
 ### Test in Python
 
 Run `main_video.py` as socket test server
-Run `socket_client_test.py` to send test case to server and check results
+
+Run `socket_client_test.py` to send test case to server and check results in all clients
 
 ## 清单
 

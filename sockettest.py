@@ -5,12 +5,15 @@ import re
 import json
 
 from dotenv import load_dotenv
-
+from asyncio import create_task
 from SerpapiWrapper import SerpapiWrapper
 
 connected_devices = set()
 # ws_loop = None  # 全局变量，用于保存后台线程的事件循环
 time_callback = None  # handle time change
+rec_callback = None  # call normal recommender
+serp_callback = None  # call serp api
+serper_callback = None  # call serper api
 # action_callback = None  # handle action
 
 
@@ -19,10 +22,6 @@ async def handler(websocket):
     print(
         f"Device connected from {websocket.remote_address}, Total: {len(connected_devices)}"
     )
-    serpapi = SerpapiWrapper()
-    await send_message_once( serpapi.SearchHotel("Tokyo","2025-10-10","2025-10-11"))
-    # await asyncio.sleep(20)
-    #await send_message_once( serpapi.SearchFlight("HND","AUS","2025-10-10","2025-10-11"))
     try:
         websocket.ping_interval = 20  # Seconds between pings
         websocket.ping_timeout = 15  # Seconds to wait for pong response
@@ -35,9 +34,19 @@ async def handler(websocket):
                 data = json.loads(message)
                 if data["type"] == "time":
                     result = await time_callback(data["value"])
-                    asyncio.create_task(send_message_once(result))
-                # elif data["type"] == "action":
-                #     pass
+                    create_task(send_message_once(result))
+                elif data["type"] == "recommend":
+                    await asyncio.gather(
+                        send_message_once(
+                            await rec_callback(data["value"]), "pre-defined"
+                        ),
+                        send_message_once(
+                            await serp_callback(data["value"])
+                        ),  # handled in serpapiwarpper
+                        send_message_once(
+                            await serper_callback(data["value"]), "serper"
+                        ),
+                    )
 
     except websockets.exceptions.ConnectionClosed:
         print(f"Device disconnected: {websocket.remote_address}")
@@ -46,17 +55,25 @@ async def handler(websocket):
         print(f"Remaining Devices: {len(connected_devices)}")
 
 
-async def send_message_once(message):
+async def send_message_once(message, type=None, target=""):
     """
     Broadcast a message to all connected devices
+    type: type of message
+    target: target for defined objects
     """
     print("send_message_once() called")  # 新增调试打印
+    format_message = (
+        json.dumps({"type": type, "target": target, "value": message})
+        if type
+        else message
+    )
+
     if connected_devices:
         disconnected = set()
         for ws in connected_devices.copy():
             try:
-                await ws.send(message)
-                print(f"Successfully sent to {ws.remote_address}: {message}")
+                await ws.send(format_message)
+                print(f"Successfully sent to {ws.remote_address}: {format_message}")
             except websockets.exceptions.ConnectionClosed:
                 print(f"Connection lost, device disconnected: {ws.remote_address}")
                 disconnected.add(ws)
