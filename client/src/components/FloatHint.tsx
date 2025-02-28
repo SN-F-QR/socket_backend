@@ -9,10 +9,7 @@ type FloatHintProps = {
 
 export const FloatHint = (props: FloatHintProps) => {
   const whenShouldHintShow = ({
-    editor,
-    view,
     state,
-    oldState,
   }: {
     editor: Editor;
     view: EditorView;
@@ -27,10 +24,7 @@ export const FloatHint = (props: FloatHintProps) => {
   };
 
   const whenShouldRecShow = ({
-    editor,
     view,
-    state,
-    oldState,
   }: {
     editor: Editor;
     view: EditorView;
@@ -58,8 +52,11 @@ export const FloatHint = (props: FloatHintProps) => {
         editor={props.editor}
         tippyOptions={{ duration: 100 }}
       >
-        <div className="rounded bg-gray-100 p-1 shadow">
-          <button onClick={() => props.selectedRecommend(props.editor)}>
+        <div className="flex rounded bg-sky-500 shadow">
+          <button
+            className="rounded px-[0.275rem] py-[0.325rem] text-sm text-white transition duration-300 hover:bg-sky-600"
+            onClick={() => props.selectedRecommend(props.editor)}
+          >
             Recommend
           </button>
         </div>
