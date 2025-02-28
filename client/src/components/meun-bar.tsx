@@ -3,6 +3,7 @@ type menuProps = {
   editor: Editor;
   disableButton: boolean;
   h1Toggle: () => void;
+  recommend: () => void;
 };
 
 type ButtonStyle = {
@@ -47,7 +48,10 @@ const MenuBar = (props: menuProps) => {
         </button>
       </div>
       <div className="place-self-center">
-        <button className="min-h-8 rounded-md bg-sky-500 px-2 text-white transition duration-300 hover:bg-sky-600">
+        <button
+          className="min-h-8 rounded-md bg-sky-500 px-2 text-white transition duration-300 hover:bg-sky-600"
+          onClick={props.recommend}
+        >
           Recommend
         </button>
         <span className="mr-2"></span>
