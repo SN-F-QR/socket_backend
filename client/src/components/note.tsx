@@ -5,7 +5,8 @@ import { useNoteEditor } from "./useNoteEditor";
 import { FloatHint } from "./FloatHint";
 
 const Note = () => {
-  const { editor, typeState, extractText, handleH1Toggle } = useNoteEditor();
+  const { editor, typeState, selectedRecommend, handleH1Toggle } =
+    useNoteEditor();
 
   return (
     <div className="relative w-full overflow-y-scroll rounded-md border">
@@ -14,11 +15,14 @@ const Note = () => {
           editor={editor as Editor}
           disableButton={typeState.current.typingNewH1}
           h1Toggle={handleH1Toggle}
-          recommend={extractText}
+          recommend={selectedRecommend}
         />
       </div>
       <div className="">
-        <FloatHint editor={editor as Editor} />
+        <FloatHint
+          editor={editor as Editor}
+          selectedRecommend={selectedRecommend}
+        />
         <EditorContent editor={editor} />
       </div>
     </div>

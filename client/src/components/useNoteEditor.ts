@@ -23,9 +23,6 @@ type TypeState = {
 };
 
 export const useNoteEditor = () => {
-  const focusFixLength: number = 9;
-  const switchLineLength: number = 1;
-
   const extensions = [
     Document,
     Paragraph,
@@ -56,41 +53,45 @@ export const useNoteEditor = () => {
     };
   };
 
-  const extractText = (editor: Editor) => {
-    editor.commands.insertContent("Recommendation");
+  const selectedRecommend = (editor: Editor) => {
+    const { from, to }: { from: number; to: number } =
+      editor.view.state.selection;
+    insertFocusTag(from, to, editor);
   };
 
   const autoRecommend = (h1Node: NodePos, editor: Editor) => {
+    const switchLineLength: number = 1;
+
     const h1From: number = h1Node.from;
-    const h1To: number = h1Node.to;
+    const h1To: number = h1Node.to - switchLineLength; // Remove the line break
     insertFocusTag(h1From, h1To, editor);
+    editor.commands.enter();
   };
 
   /**
    * Inset <focus></focus> tag to the text and output the tagged text, then remove the tag
    * @param from position of <focus>
    * @param to position of </focus>, must be larger than from
+   * @param switchLine if the selection
    */
   const insertFocusTag = (from: number, to: number, editor: Editor) => {
     if (from >= to) {
       return;
     }
 
+    const focusFixLength: number = 7;
+
     editor
       .chain()
-      .insertContentAt(from - switchLineLength, "\<focus\>")
-      .insertContentAt(to + focusFixLength + switchLineLength, "\<\/focus\>")
+      .insertContentAt(from, "\<focus\>")
+      .insertContentAt(to + focusFixLength, "\<\/focus\>")
       .run();
     const taggedText: string = editor.getText();
     console.log(taggedText);
-    const newTo: number = to + switchLineLength;
     editor
       .chain()
       .insertContentAt({ from: from, to: from + focusFixLength }, "")
-      .insertContentAt(
-        { from: to + switchLineLength, to: newTo + focusFixLength },
-        "",
-      )
+      .insertContentAt({ from: to, to: to + focusFixLength + 1 }, "")
       .run();
   };
 
@@ -243,5 +244,5 @@ export const useNoteEditor = () => {
     // onSelectionUpdate: onSelectionUpdate,
   });
 
-  return { editor, typeState, extractText, handleH1Toggle };
+  return { editor, typeState, selectedRecommend, handleH1Toggle };
 };
