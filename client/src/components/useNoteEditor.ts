@@ -1,5 +1,5 @@
-import { useState, useRef } from "react";
-import { useEditor, EditorContent, Editor, NodePos } from "@tiptap/react";
+import { useRef } from "react";
+import { useEditor, Editor, NodePos } from "@tiptap/react";
 import Document from "@tiptap/extension-document";
 import Paragraph from "@tiptap/extension-paragraph";
 import Text from "@tiptap/extension-text";
@@ -7,6 +7,7 @@ import BulletList from "@tiptap/extension-bullet-list";
 import ListItem from "@tiptap/extension-list-item";
 import { Color } from "@tiptap/extension-color";
 import TextStyle from "@tiptap/extension-text-style";
+import { FloatingMenu } from "@tiptap/extension-floating-menu";
 
 import { CustomHeading } from "./custom-extension";
 import shortUUID from "short-uuid";
@@ -31,6 +32,7 @@ export const useNoteEditor = () => {
     ListItem,
     TextStyle,
     Color,
+    FloatingMenu,
   ];
 
   const typeState = useRef<TypeState>({

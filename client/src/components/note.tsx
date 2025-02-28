@@ -2,6 +2,7 @@ import { EditorContent, Editor } from "@tiptap/react";
 
 import MenuBar from "./meun-bar";
 import { useNoteEditor } from "./useNoteEditor";
+import { FloatHint } from "./FloatHint";
 
 const Note = () => {
   const { editor, typeState, extractText, handleH1Toggle } = useNoteEditor();
@@ -17,6 +18,7 @@ const Note = () => {
         />
       </div>
       <div className="">
+        <FloatHint editor={editor as Editor} />
         <EditorContent editor={editor} />
       </div>
     </div>
