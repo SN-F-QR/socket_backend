@@ -23,6 +23,9 @@ type TypeState = {
 };
 
 export const useNoteEditor = () => {
+  const focusFixLength: number = 9;
+  const switchLineLength: number = 1;
+
   const extensions = [
     Document,
     Paragraph,
@@ -53,8 +56,42 @@ export const useNoteEditor = () => {
     };
   };
 
-  const extractText = () => {
-    console.log(editor?.getHTML());
+  const extractText = (editor: Editor) => {
+    editor.commands.insertContent("Recommendation");
+  };
+
+  const autoRecommend = (h1Node: NodePos, editor: Editor) => {
+    const h1From: number = h1Node.from;
+    const h1To: number = h1Node.to;
+    insertFocusTag(h1From, h1To, editor);
+  };
+
+  /**
+   * Inset <focus></focus> tag to the text and output the tagged text, then remove the tag
+   * @param from position of <focus>
+   * @param to position of </focus>, must be larger than from
+   */
+  const insertFocusTag = (from: number, to: number, editor: Editor) => {
+    if (from >= to) {
+      return;
+    }
+
+    editor
+      .chain()
+      .insertContentAt(from - switchLineLength, "\<focus\>")
+      .insertContentAt(to + focusFixLength + switchLineLength, "\<\/focus\>")
+      .run();
+    const taggedText: string = editor.getText();
+    console.log(taggedText);
+    const newTo: number = to + switchLineLength;
+    editor
+      .chain()
+      .insertContentAt({ from: from, to: from + focusFixLength }, "")
+      .insertContentAt(
+        { from: to + switchLineLength, to: newTo + focusFixLength },
+        "",
+      )
+      .run();
   };
 
   /**
@@ -135,6 +172,7 @@ export const useNoteEditor = () => {
           .setTextSelection(curNode.from)
           .run();
         console.log("Do recommendation?");
+        autoRecommend(beforeNode, editor);
       } // else tying some other paragraph, I do not cancel the status, and then could return to the new H1
     } catch (e) {
       if (e instanceof RangeError) {
@@ -172,6 +210,12 @@ export const useNoteEditor = () => {
     }
   };
 
+  // const onSelectionUpdate = ({ editor }: EditorWrap) => {
+  //   const { from, to }: { from: number; to: number } =
+  //     editor.view.state.selection;
+  //   console.log(`Selection updated: ${from} to ${to}`);
+  // };
+
   const content: string = `
   <h1>
   Hi there,
@@ -196,6 +240,7 @@ export const useNoteEditor = () => {
     },
     onUpdate: onUpdate,
     onTransaction: onTransaction,
+    // onSelectionUpdate: onSelectionUpdate,
   });
 
   return { editor, typeState, extractText, handleH1Toggle };
