@@ -53,19 +53,31 @@ export const useNoteEditor = () => {
     };
   };
 
+  /**
+   * Set <focus> on the user selected text and send the text
+   * Abort if the user is typing a new H1
+   */
   const selectedRecommend = (editor: Editor) => {
+    if (typeState.current.typingNewH1) {
+      return;
+    }
     const { from, to }: { from: number; to: number } =
       editor.view.state.selection;
     insertFocusTag(from, to, editor);
+    resetStatus();
   };
 
+  /**
+   * Set <focus> on the new H1 and send text
+   * @param h1Node the new H1 node
+   */
   const autoRecommend = (h1Node: NodePos, editor: Editor) => {
     const switchLineLength: number = 1;
 
     const h1From: number = h1Node.from;
     const h1To: number = h1Node.to - switchLineLength; // Remove the line break
     insertFocusTag(h1From, h1To, editor);
-    editor.commands.enter();
+    editor.commands.setTextSelection(h1To + switchLineLength * 2); // Move the cursor to the next line
   };
 
   /**
