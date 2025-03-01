@@ -5,7 +5,7 @@ import { useNoteEditor } from "./useNoteEditor";
 import { FloatHint } from "./FloatHint";
 
 const Note = () => {
-  const { editor, typeState, selectedRecommend, handleH1Toggle } =
+  const { editor, typeState, recommending, selectedRecommend, handleH1Toggle } =
     useNoteEditor();
 
   return (

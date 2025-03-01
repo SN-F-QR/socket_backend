@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { useEditor, Editor, NodePos } from "@tiptap/react";
 import Document from "@tiptap/extension-document";
 import Paragraph from "@tiptap/extension-paragraph";
@@ -11,6 +11,8 @@ import { FloatingMenu } from "@tiptap/extension-floating-menu";
 
 import { CustomHeading } from "./custom-extension";
 import shortUUID from "short-uuid";
+
+import { requestRecommend } from "./client-websocket";
 
 type EditorWrap = {
   editor: Editor;
@@ -41,6 +43,9 @@ export const useNoteEditor = () => {
     newH1ByButton: false,
   });
 
+  // track the response of recommendation
+  const [recommending, setRecommending] = useState<boolean>(false);
+
   const handleH1Toggle = () => {
     typeState.current.newH1ByButton = true;
   };
@@ -57,13 +62,14 @@ export const useNoteEditor = () => {
    * Set <focus> on the user selected text and send the text
    * Abort if the user is typing a new H1
    */
-  const selectedRecommend = (editor: Editor) => {
+  const selectedRecommend = async (editor: Editor) => {
     if (typeState.current.typingNewH1) {
       return;
     }
     const { from, to }: { from: number; to: number } =
       editor.view.state.selection;
-    insertFocusTag(from, to, editor);
+    const taggedText = extractFocusedText(from, to, editor);
+    handleRecommend(taggedText);
     resetStatus();
   };
 
@@ -76,19 +82,35 @@ export const useNoteEditor = () => {
 
     const h1From: number = h1Node.from;
     const h1To: number = h1Node.to - switchLineLength; // Remove the line break
-    insertFocusTag(h1From, h1To, editor);
+    const taggedText = extractFocusedText(h1From, h1To, editor);
     editor.commands.setTextSelection(h1To + switchLineLength * 2); // Move the cursor to the next line
+    handleRecommend(taggedText);
+  };
+
+  const handleRecommend = async (note: string) => {
+    try {
+      setRecommending(true);
+      const recommendations = await requestRecommend(note);
+      console.log(`Successfully get ${recommendations.length} recommendations`);
+    } catch (e) {
+      console.error(`Cannot do recommendation since: ${e}`);
+    } finally {
+      setRecommending(false);
+    }
   };
 
   /**
-   * Inset <focus></focus> tag to the text and output the tagged text, then remove the tag
+   * Insert <focus></focus> tag to the text and output the tagged text, then remove the tag
    * @param from position of <focus>
    * @param to position of </focus>, must be larger than from
-   * @param switchLine if the selection
    */
-  const insertFocusTag = (from: number, to: number, editor: Editor) => {
+  const extractFocusedText = (
+    from: number,
+    to: number,
+    editor: Editor,
+  ): string => {
     if (from >= to) {
-      return;
+      return "";
     }
 
     const focusFixLength: number = 7;
@@ -105,6 +127,7 @@ export const useNoteEditor = () => {
       .insertContentAt({ from: from, to: from + focusFixLength }, "")
       .insertContentAt({ from: to, to: to + focusFixLength + 1 }, "")
       .run();
+    return taggedText;
   };
 
   /**
@@ -256,5 +279,5 @@ export const useNoteEditor = () => {
     // onSelectionUpdate: onSelectionUpdate,
   });
 
-  return { editor, typeState, selectedRecommend, handleH1Toggle };
+  return { editor, typeState, recommending, selectedRecommend, handleH1Toggle };
 };
