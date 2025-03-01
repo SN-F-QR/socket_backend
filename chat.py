@@ -6,6 +6,7 @@ import json
 import asyncio
 
 from SerpapiWrapper import SerpapiWrapper
+from SerperWrapper import SerperWrapper
 from utility import extract_json_array
 
 
@@ -18,6 +19,7 @@ class ChatRecommender:
             "serper": self.read_prompt("serper"),
         }
         self.serp_wrapper = SerpapiWrapper()
+        self.serper = SerperWrapper()
 
     def read_prompt(self, name):
         with open(f"prompts/{name}.txt", "r") as file:
@@ -75,9 +77,9 @@ class ChatRecommender:
         response = await self.create_chat("serper", text_input)
         args = json.loads(extract_json_array(response.choices[0].message.content))
         list_args = list(map(lambda arg: arg["keyword"].strip(), args))
-        # TODO: call serper api using args
         print(f"Serper Args: {list_args}")
-        return list_args
+        links = await self.serper.post_all_questions(list_args)
+        return links
 
     def format_text(self, text):
         return "<plan>" + text + "</plan>"
@@ -102,5 +104,11 @@ if __name__ == "__main__":
         response = await recommender.request_serp(case)
         print(f"Response:\n{response}")
 
-    asyncio.run(test_serp())
+    async def test_serper():
+        for case in test_case["content"]:
+            print(f"User:\n{case}")
+            response = await recommender.request_serper(case)
+            print(f"Response:\n{response}")
+
+    asyncio.run(test_serper())
     # asyncio.run(test_normal())
