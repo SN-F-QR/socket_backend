@@ -4,6 +4,7 @@ import pandas as pd
 from dotenv import load_dotenv
 import json
 import asyncio
+import time
 
 from SerpapiWrapper import SerpapiWrapper
 from SerperWrapper import SerperWrapper
@@ -41,11 +42,17 @@ class ChatRecommender:
         return completion
 
     async def request_widgets(self, text_input):
+        start_time = time.perf_counter()
+        print(f"Widgets API is starting in {start_time:.3f}")
         response = await self.create_chat("normal", text_input)
         widgets = json.loads(extract_json_array(response.choices[0].message.content))
         try:
             assert widgets is not None and len(widgets) > 0
-            return widgets
+            end_time = time.perf_counter()
+            print(
+                f"Widgets API is finished in {end_time:.3f}, with spend time {end_time - start_time:.3f}"
+            )
+            return self.format_result("widgets", "", widgets)
         except AssertionError:
             print("No widgets found in response.")
 
@@ -53,6 +60,8 @@ class ChatRecommender:
         """
         Request serp api based on the response from LLM.
         """
+        start_time = time.perf_counter()
+        print(f"Serp API is starting in {start_time:.3f}")
         response = await self.create_chat("serp", text_input)
         args = json.loads(extract_json_array(response.choices[0].message.content))
         if args is None or len(args) == 0:
@@ -69,20 +78,40 @@ class ChatRecommender:
             print(f"API: {api_name}, Args: {api_args}")
             target_func = getattr(self.serp_wrapper, api_name)
             loop = asyncio.get_event_loop()
-            return await loop.run_in_executor(None, target_func, *api_args)
+            result = await loop.run_in_executor(None, target_func, *api_args)
+            end_time = time.perf_counter()
+            print(
+                f"Serp API is finished in {end_time:.3f}, with spend time {end_time - start_time:.3f}"
+            )
+            return result
         except AssertionError:
             print("API not found, check LLM response if it is correct.")
 
     async def request_serper(self, text_input):
+        start_time = time.perf_counter()
+        print(f"Serper API is starting in {start_time:.3f}")
         response = await self.create_chat("serper", text_input)
         args = json.loads(extract_json_array(response.choices[0].message.content))
         list_args = list(map(lambda arg: arg["keyword"].strip(), args))
         print(f"Serper Args: {list_args}")
         links = await self.serper.post_all_questions(list_args)
-        return links
+        end_time = time.perf_counter()
+        print(
+            f"Serper API is finished in {end_time:.3f}, with spend time {end_time - start_time:.3f}"
+        )
+
+        return self.format_result("serper", "", links)
 
     def format_text(self, text):
         return "<plan>" + text + "</plan>"
+
+    def format_result(self, type, target, result):
+        formatted_result = {
+            "type": type,
+            "target": target,
+            "value": result,
+        }
+        return json.dumps(formatted_result)
 
 
 if __name__ == "__main__":

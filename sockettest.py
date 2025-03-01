@@ -27,7 +27,7 @@ async def handler(websocket):
         websocket.ping_timeout = 15  # Seconds to wait for pong response
         async for message in websocket:
             print(f"Received: {message}")
-            await websocket.send(f"Echo: {message}")
+            await websocket.send(json.dumps({"Echo": message}))
             if re.match(r"https?:\/\/", message):
                 webbrowser.open_new_tab(message)
             elif re.match(r"\{\"type\":[\s\S]*\}", message):
@@ -36,17 +36,25 @@ async def handler(websocket):
                     result = await time_callback(data["value"])
                     create_task(send_message_once(result))
                 elif data["type"] == "recommend":
-                    await asyncio.gather(
-                        send_message_once(
-                            await rec_callback(data["value"]), "pre-defined"
-                        ),
-                        send_message_once(
-                            await serp_callback(data["value"])
-                        ),  # handled in serpapiwarpper
-                        send_message_once(
-                            await serper_callback(data["value"]), "serper"
-                        ),
-                    )
+                    # await asyncio.gather(
+                    #     send_message_once(
+                    #         await rec_callback(data["value"]), "pre-defined"
+                    #     ),
+                    #     # send_message_once(
+                    #     #     await serp_callback(data["value"])
+                    #     # ),  # handled in serpapiwarpper
+                    #     send_message_once(
+                    #         await serper_callback(data["value"]), "serper"
+                    #     ),
+                    # )
+                    tasks = [
+                        rec_callback(data["value"]),
+                        serp_callback(data["value"]),
+                        serper_callback(data["value"]),
+                    ]
+                    for future in asyncio.as_completed(tasks):
+                        result = await future
+                        create_task(send_message_once(result))
 
     except websockets.exceptions.ConnectionClosed:
         print(f"Device disconnected: {websocket.remote_address}")
