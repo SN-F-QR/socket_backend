@@ -13,6 +13,7 @@ const Note = () => {
       <div className="sticky top-0 z-50 px-2 py-2">
         <MenuBar
           editor={editor as Editor}
+          recommending={recommending}
           disableButton={typeState.current.typingNewH1}
           h1Toggle={handleH1Toggle}
           recommend={selectedRecommend}
@@ -21,6 +22,7 @@ const Note = () => {
       <div className="">
         <FloatHint
           editor={editor as Editor}
+          recommending={recommending}
           selectedRecommend={selectedRecommend}
         />
         <EditorContent editor={editor} />

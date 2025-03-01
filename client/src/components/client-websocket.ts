@@ -17,7 +17,7 @@ export let socket: Socket | undefined = undefined;
 
 let waitingStatus: boolean = false;
 let responsePromise: Promise<ResponseMessage[]> | undefined = undefined;
-let responseResolve: (value: ResponseMessage[]) => void = () => {};
+let responseResolve: (value: ResponseMessage[]) => void = () => {}; // change state of promise, and return the value for await
 let timeoutId: number;
 let responseMessages: Array<ResponseMessage> = [];
 

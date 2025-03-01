@@ -2,8 +2,11 @@ import { Editor, FloatingMenu } from "@tiptap/react";
 import { EditorState } from "@tiptap/pm/state";
 import { EditorView } from "@tiptap/pm/view";
 
+import { ArrowPathIcon } from "@heroicons/react/24/outline";
+
 type FloatHintProps = {
   editor: Editor;
+  recommending: boolean;
   selectedRecommend: (editor: Editor) => void;
 };
 
@@ -56,8 +59,13 @@ export const FloatHint = (props: FloatHintProps) => {
           <button
             className="rounded px-[0.275rem] py-[0.325rem] text-sm text-white transition duration-300 hover:bg-sky-600"
             onClick={() => props.selectedRecommend(props.editor)}
+            disabled={props.recommending}
           >
-            Recommend
+            {props.recommending ? (
+              <ArrowPathIcon className="size-5 animate-spin place-self-center" />
+            ) : (
+              <p className="place-self-center">Recommend</p>
+            )}
           </button>
         </div>
       </FloatingMenu>

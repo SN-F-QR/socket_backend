@@ -1,7 +1,10 @@
 import { Editor } from "@tiptap/react";
+import { ArrowPathIcon } from "@heroicons/react/24/outline";
+
 type menuProps = {
   editor: Editor;
   disableButton: boolean;
+  recommending: boolean;
   h1Toggle: () => void;
   recommend: (editor: Editor) => void;
 };
@@ -42,17 +45,25 @@ const MenuBar = (props: menuProps) => {
         <button
           className={getButtonCSS(props.editor.isActive("bulletList"))}
           onClick={() => props.editor.chain().focus().toggleBulletList().run()}
-          disabled={props.disableButton}
+          disabled={props.disableButton || props.recommending}
         >
           Bullet list
         </button>
       </div>
-      <div className="place-self-center">
+      <div className="flex items-center">
         <button
-          className="min-h-8 rounded-md bg-sky-500 px-2 text-white transition duration-300 hover:bg-sky-600"
+          className="flex min-h-8 space-x-1 rounded-md bg-sky-500 px-2 text-white transition duration-300 hover:bg-sky-600"
           onClick={() => props.recommend(props.editor)}
+          disabled={props.recommending}
         >
-          Recommend
+          {props.recommending ? (
+            <>
+              <ArrowPathIcon className="size-5 animate-spin place-self-center" />
+              <p className="place-self-center">Processing</p>
+            </>
+          ) : (
+            <p className="place-self-center">Recommend</p>
+          )}
         </button>
         <span className="mr-2"></span>
       </div>
