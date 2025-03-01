@@ -1,5 +1,5 @@
 import { Editor } from "@tiptap/react";
-import { ArrowPathIcon } from "@heroicons/react/24/outline";
+import { ArrowPathIcon, ListBulletIcon } from "@heroicons/react/24/outline";
 
 type menuProps = {
   editor: Editor;
@@ -18,7 +18,7 @@ const MenuBar = (props: menuProps) => {
   const buttonCSS: ButtonStyle = {
     true: "transition shrink-0 border rounded-md bg-sky-500 px-2 max-h-8 place-self-center text-white hover:bg-sky-600 duration-300",
     false:
-      "transition shrink-0 border rounded-md bg-gray-100 px-2 max-h-8 place-self-center hover:bg-gray-200 duration-300",
+      "transition shrink-0 border rounded-md bg-gray-100 px-2 max-h-8 max-w-10 place-self-center hover:bg-gray-200 duration-300",
   };
 
   const getButtonCSS = (isActive: boolean): string =>
@@ -45,16 +45,17 @@ const MenuBar = (props: menuProps) => {
         <button
           className={getButtonCSS(props.editor.isActive("bulletList"))}
           onClick={() => props.editor.chain().focus().toggleBulletList().run()}
-          disabled={props.disableButton || props.recommending}
+          disabled={props.disableButton}
         >
-          Bullet list
+          {/* Bullet list */}
+          <ListBulletIcon className="size-6" />
         </button>
       </div>
       <div className="flex items-center">
         <button
           className="flex min-h-8 space-x-1 rounded-md bg-sky-500 px-2 text-white transition duration-300 hover:bg-sky-600"
           onClick={() => props.recommend(props.editor)}
-          disabled={props.recommending}
+          disabled={props.disableButton || props.recommending}
         >
           {props.recommending ? (
             <>
