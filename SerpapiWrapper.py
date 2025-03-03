@@ -53,7 +53,7 @@ class SerpapiWrapper:
         }
         search = GoogleSearch(params)
         outbound_data = json.loads(search.get_raw_json())
-        depature_token = outbound_data["best_flights"][0]["departure_token"];
+        depature_token = outbound_data["best_flights"][0]["departure_token"]
         return_params = {
             "engine": "google_flights",
             "hl": "en",
@@ -81,7 +81,7 @@ class SerpapiWrapper:
         formatted_output = {
             "type": "defined",
             "target": "flight",
-            "value": combined_results,
+            "value": [combined_results]
         }
         json_str = json.dumps(formatted_output)
         return json_str
@@ -108,7 +108,7 @@ class SerpapiWrapper:
         formatted_output = {
             "type": "defined",
             "target": "restaurant",
-            "value": combined_results
+            "value": [combined_results]
         }
         json_str = json.dumps(formatted_output)
         return json_str
