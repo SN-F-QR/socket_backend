@@ -24,7 +24,7 @@ type TypeState = {
   newH1ByButton: boolean;
 };
 
-export const useNoteEditor = () => {
+export const useNoteEditor = (saveNoteToLocal: () => void) => {
   const extensions = [
     Document,
     Paragraph,
@@ -42,6 +42,17 @@ export const useNoteEditor = () => {
     newH1Id: "",
     newH1ByButton: false,
   });
+
+  const updateCount = useRef<number>(0);
+  const maxUpdateCount = 10;
+
+  const count = () => {
+    updateCount.current += 1;
+    if (updateCount.current > maxUpdateCount) {
+      saveNoteToLocal();
+      updateCount.current = 0;
+    }
+  };
 
   // track the response of recommendation
   const [recommending, setRecommending] = useState<boolean>(false);
@@ -89,9 +100,12 @@ export const useNoteEditor = () => {
 
   const handleRecommend = async (note: string) => {
     try {
+      const start = performance.now();
       setRecommending(true);
       const recommendations = await requestRecommend(note);
       console.log(`Successfully get ${recommendations.length} recommendations`);
+      const end = performance.now();
+      console.log(`Recommendation time: ${(end - start) / 1000}s`);
     } catch (e) {
       console.error(`Cannot do recommendation since: ${e}`);
     } finally {
@@ -224,6 +238,7 @@ export const useNoteEditor = () => {
    * @param editor of Tiptap
    */
   const onUpdate = ({ editor }: EditorWrap) => {
+    count();
     const updatePos: number = editor.state.selection.$head.pos; // Pos of ProseMirror Node
     // Use $pos to get the current NodePos in Tiptap, then can revise a many things
     const curNode: NodePos = editor.$pos(updatePos);
@@ -252,18 +267,7 @@ export const useNoteEditor = () => {
   //   console.log(`Selection updated: ${from} to ${to}`);
   // };
 
-  const content: string = `
-  <h1>
-  Hi there,
-  </h1>
-  <p>
-    This is a basic example of Tiptap. Sure, there are all kind of basic text styles you'd probably expect from a text editor. But wait until you see the lists:
-    <ul>
-          <li>This is a bullet list.</li>
-          <li>And it has three list items.</li>
-          <li>Here is the third one.</li>
-    </ul>
-  Lorem ipsum dolor sit amet. Eos voluptates voluptatem ea sapiente nostrum sit perspiciatis iusto sed ipsa dolor et veritatis ducimus ut quia quaerat non nisi dolore. Id dolores odit est corporis dicta aut magni internos id odit velit. Sed facilis molestias qui omnis laborum aut perferendis dolore. Ut totam vitae eos deserunt asperiores non officiis iure est nostrum aliquid qui sunt assumenda ut recusandae error nam eius rerum. Qui maxime sint aut blanditiis beatae est ratione illum! Et amet saepe ea blanditiis quia et enim dolor et exercitationem optio ut laborum obcaecati qui repudiandae tenetur? In doloribus galisum est ducimus quia aut harum architecto ut voluptas ipsam eos odio itaque. Aut voluptatum impedit rem maxime tempora id corporis optio quo corrupti nesciunt aut culpa veritatis et voluptatum rerum. Ea atque facilis vel odio voluptatem sed nesciunt molestias et natus rerum rem voluptas temporibus nam quae enim. Qui molestiae molestiae id quia nihil sit dolorum totam et adipisci numquam ex ipsam maxime At architecto repellat. Aut debitis voluptas qui error pariatur et explicabo optio ut quis architecto et sint repellendus sed dolores commodi.</p>`;
+  const content: string = "";
 
   const editor = useEditor({
     extensions: extensions,
@@ -279,5 +283,11 @@ export const useNoteEditor = () => {
     // onSelectionUpdate: onSelectionUpdate,
   });
 
-  return { editor, typeState, recommending, selectedRecommend, handleH1Toggle };
+  return {
+    editor,
+    typeState,
+    recommending,
+    selectedRecommend,
+    handleH1Toggle,
+  };
 };
