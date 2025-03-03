@@ -53,10 +53,27 @@ class SerpapiWrapper:
         }
         search = GoogleSearch(params)
         data = json.loads(search.get_raw_json())
+        depature_token = data["best_flights"][0]["departure_token"];
+        return_params = {
+            "engine": "google_flights",
+            "hl": "en",
+            "gl": "jp",
+            "api_key": self.api_key,
+            "currency": "JPY",
+            "adults": 1,
+            "departure_id": _departure_id,
+            "arrival_id": _arrival_id,
+            "outbound_date": _outbound_date,
+            "return_date": _return_date,
+            "departure_token": depature_token
+        }
+        return_search = GoogleSearch(return_params)
+        return_data = json.loads(return_search.get_raw_json())
         formatted_output = {
             "type": "defined",
             "target": "flight",
-            "value": self.GetFlightResult(data)
+            "outbound_value": self.GetFlightResult(data),
+            "return_value": self.GetFlightResult(return_data)
         }
         json_str = json.dumps(formatted_output)
         return json_str
@@ -128,11 +145,11 @@ class SerpapiWrapper:
 
         # 将 best_flights 和 other_flights 合并，优先使用 best_flights
         combined_flights = best_flights.copy()
-        if len(combined_flights) < 3:
+        if len(combined_flights) < 1:
             combined_flights.extend(other_flights)
 
         # 只取前 3 个航班组合
-        for flight_group in combined_flights[:3]:
+        for flight_group in combined_flights[:1]:
             flights_list = flight_group.get("flights", [])
             if not flights_list:
                 continue  # 如果没有航段则跳过
@@ -204,8 +221,8 @@ if __name__ == "__main__":
     #result = serpapi.SearchHotel("Tokyo","2025-10-10","2025-10-11")
     # with open("test.json", "r", encoding="utf-8") as file:
     #     data = json.load(file)
-    #result = serpapi.SearchFlight("HND","AUS","2025-10-10","2025-10-11")
-    result = serpapi.SearchRestaurant("Tokyo")
+    result = serpapi.SearchFlight("HND","AUS","2025-10-10","2025-10-11")
+    #result = serpapi.SearchRestaurant("Tokyo")
 
     print(result)
 
