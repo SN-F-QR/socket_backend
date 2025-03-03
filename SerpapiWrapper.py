@@ -52,8 +52,8 @@ class SerpapiWrapper:
             "return_date": _return_date
         }
         search = GoogleSearch(params)
-        data = json.loads(search.get_raw_json())
-        depature_token = data["best_flights"][0]["departure_token"];
+        outbound_data = json.loads(search.get_raw_json())
+        depature_token = outbound_data["best_flights"][0]["departure_token"];
         return_params = {
             "engine": "google_flights",
             "hl": "en",
@@ -69,33 +69,46 @@ class SerpapiWrapper:
         }
         return_search = GoogleSearch(return_params)
         return_data = json.loads(return_search.get_raw_json())
+        refine_outbound_data = self.GetFlightResult(outbound_data)
+        #print(refine_outbound_data)
+        refine_return_data = self.GetFlightResult(return_data)
+        #print(refine_return_data)
+        combined_results = {
+            "outbound": refine_outbound_data,  # 去程结果
+            "return": refine_return_data  # 回程结果
+        }
+
         formatted_output = {
             "type": "defined",
             "target": "flight",
-            "outbound_value": self.GetFlightResult(data),
-            "return_value": self.GetFlightResult(return_data)
+            "value": combined_results,
         }
         json_str = json.dumps(formatted_output)
         return json_str
 
-    def SearchRestaurant(self,Location):
+    def SearchRestaurant(self,query):
+        finalquery = query + " restaurant"
         params = {
             "engine": "google_local",
             "google_domain": "google.com",
             "hl": "en",
             "gl": "jp",
             "api_key": self.api_key,
-            "q": "restaurant",
-            "Location": Location
+            "q": finalquery,
         }
         search = GoogleSearch(params)
         data = json.loads(search.get_raw_json())
+
+        combined_results = {
+            "query": finalquery,
+            "local_results": self.GetRestaurantResult(data)
+        }
 
         ## TODO: Extract the restaurant information
         formatted_output = {
             "type": "defined",
             "target": "restaurant",
-            "value": self.GetRestaurantResult(data)
+            "value": combined_results
         }
         json_str = json.dumps(formatted_output)
         return json_str
@@ -221,8 +234,8 @@ if __name__ == "__main__":
     #result = serpapi.SearchHotel("Tokyo","2025-10-10","2025-10-11")
     # with open("test.json", "r", encoding="utf-8") as file:
     #     data = json.load(file)
-    result = serpapi.SearchFlight("HND","AUS","2025-10-10","2025-10-11")
-    #result = serpapi.SearchRestaurant("Tokyo")
+    #result = serpapi.SearchFlight("HND","AUS","2025-10-10","2025-10-11")
+    result = serpapi.SearchRestaurant("Shibuya")
 
     print(result)
 
