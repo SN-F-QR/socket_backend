@@ -13,9 +13,11 @@ const App = () => {
   }, []);
 
   return (
-    <div className="flex h-screen justify-evenly space-x-5 p-2">
+    <div className="flex h-screen overflow-y-auto p-2 max-md:flex-col md:justify-evenly md:space-x-5 md:overflow-clip">
       <Player />
-      <Note />
+      <div className="h-full flex-none md:w-1/2">
+        <Note />
+      </div>
     </div>
   );
 };

@@ -72,7 +72,7 @@ const Note = () => {
   };
 
   return (
-    <div className="relative w-full overflow-y-scroll rounded-md border">
+    <div className="relative h-full w-full overflow-y-scroll rounded-md border">
       <div className="sticky top-0 z-50 px-2 py-2">
         <MenuBar
           editor={editor as Editor}
@@ -90,7 +90,7 @@ const Note = () => {
         />
         <EditorContent editor={editor} />
       </div>
-      <div className="fixed bottom-4 right-6">
+      <div className="fixed bottom-4 right-6 z-50">
         <div className="relative">
           <div className="absolute bottom-4 right-4">
             <SettingMenu

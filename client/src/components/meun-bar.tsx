@@ -16,9 +16,9 @@ type ButtonStyle = {
 
 const MenuBar = (props: menuProps) => {
   const buttonCSS: ButtonStyle = {
-    true: "transition shrink-0 border rounded-md bg-sky-500 px-2 max-h-8 place-self-center text-white hover:bg-sky-600 duration-300",
+    true: "transition shrink-0 border rounded-md bg-sky-500 px-2 max-h-8 w-10 place-self-center text-white hover:bg-sky-600 duration-300",
     false:
-      "transition shrink-0 border rounded-md bg-gray-100 px-2 max-h-8 max-w-10 place-self-center hover:bg-gray-200 duration-300",
+      "transition shrink-0 border rounded-md bg-gray-100 px-2 max-h-8 w-10 place-self-center hover:bg-gray-200 duration-300",
   };
 
   const getButtonCSS = (isActive: boolean): string =>
