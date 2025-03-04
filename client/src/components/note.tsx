@@ -90,7 +90,7 @@ const Note = () => {
         />
         <EditorContent editor={editor} />
       </div>
-      <div className="fixed bottom-4 right-6 z-50">
+      <div className="fixed bottom-4 right-6">
         <div className="relative">
           <div className="absolute bottom-4 right-4">
             <SettingMenu

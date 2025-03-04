@@ -11,7 +11,7 @@ const SettingMenu = (props: SettingMenuProps) => {
   const buttonStyle =
     "w-full py-2 text-left text-sm font-semibold transition duration-300 hover:text-sky-500";
   const activeList =
-    "text-md flex w-48 flex-col rounded-md border bg-white py-2 px-4 shadow-lg scale-100 max-h-96 overflow-hidden";
+    "text-md flex w-48 flex-col rounded-md border bg-white py-2 px-4 shadow-lg max-h-96 overflow-hidden";
 
   const [isActive, setIsActive] = useState<boolean>(false);
   const [activeHistory, setActiveHistory] = useState<boolean>(false);
@@ -49,10 +49,10 @@ const SettingMenu = (props: SettingMenuProps) => {
   return (
     <div className="relative inline-block">
       <div
-        className={`transform transition-all duration-300 ${
+        className={`absolute bottom-full right-0 transform transition-all duration-300 ${
           isActive
-            ? "max-h-48 opacity-100"
-            : "pointer-events-none max-h-0 opacity-0"
+            ? "translate-y-0 opacity-100"
+            : "invisible max-h-0 translate-y-5 opacity-0"
         } ${activeList} `}
       >
         <button
@@ -103,7 +103,7 @@ const SettingMenu = (props: SettingMenuProps) => {
 
       <div className="justify-self-end">
         <button
-          className={`place-items-center rounded-full border p-1 shadow backdrop-blur transition-all duration-300 hover:text-sky-500 ${isActive ? "pointer-events-none rotate-90 scale-0 opacity-0" : "rotate-0 scale-100 opacity-100"} `}
+          className={`place-items-center rounded-full border p-1 shadow backdrop-blur transition-all duration-300 hover:text-sky-500 ${isActive ? "rotate-90 scale-0 opacity-0" : "rotate-0 scale-100 opacity-100"} `}
           onClick={() => setIsActive(true)}
         >
           <CogIcon className="size-5" />
