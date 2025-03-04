@@ -1,5 +1,8 @@
 from PIL import Image
 import re
+import json
+import os
+import datetime
 
 
 def ocr_page(page):
@@ -31,3 +34,10 @@ def ocr_page(page):
 def extract_json_array(text):
     json = re.search(r"\[\s*\{[\s\S]*?\}\s*\]", text).group()
     return json
+
+
+def save_note(note_json):
+    file_name = datetime.datetime.fromtimestamp(note_json["date"] // 1000)
+    path = os.path.join("./notes", f"{file_name}.json")
+    with open(path, "w+") as file:
+        json.dump(note_json, file, indent=4)
