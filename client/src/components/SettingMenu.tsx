@@ -4,6 +4,7 @@ import { CogIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 
 type SettingMenuProps = {
   loadNoteToEditor: (id: string) => void;
+  saveNoteToServer: () => void;
 };
 
 const SettingMenu = (props: SettingMenuProps) => {
@@ -85,7 +86,13 @@ const SettingMenu = (props: SettingMenuProps) => {
           Clear
         </button>
 
-        <button className={`${buttonStyle} text-red-500 hover:text-red-500`}>
+        <button
+          className={`${buttonStyle} text-red-500 hover:text-red-500`}
+          onClick={() => {
+            props.saveNoteToServer();
+            resetButtonStatus();
+          }}
+        >
           Finish
         </button>
 

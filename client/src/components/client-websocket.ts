@@ -1,4 +1,5 @@
 import shortUUID from "short-uuid";
+import { NoteData } from "./note-manager";
 
 const WEBSOCKET_URL = "ws://localhost:12345";
 
@@ -13,11 +14,23 @@ type ResponseMessage = {
   value: string;
 };
 
+type EchoMessage = {
+  echo: string;
+};
+
+type SendOutMessage = {
+  type: string;
+};
+
 export let socket: Socket | undefined = undefined;
 
-let waitingStatus: boolean = false;
-let responsePromise: Promise<ResponseMessage[]> | undefined = undefined;
+let waitingStatus: boolean = false; // true after recommend, reject all other sending requests if waiting
+let responsePromise:
+  | Promise<ResponseMessage[]>
+  | Promise<EchoMessage>
+  | undefined = undefined;
 let responseResolve: (value: ResponseMessage[]) => void = () => {}; // change state of promise, and return the value for await
+let echoResolve: (value: EchoMessage) => void = () => {};
 let timeoutId: number;
 let responseMessages: Array<ResponseMessage> = [];
 
@@ -46,19 +59,26 @@ const initializeWebsocket = () => {
 
   socket.ws.addEventListener("message", (event: MessageEvent) => {
     console.log("Message from server ", event.data);
-    const response: ResponseMessage = JSON.parse(event.data);
-    if (
-      response.type &&
-      (response.type === "pre-defined" || "defined" || "serper")
-    ) {
-      responseMessages.push(response);
-    }
+    if (waitingStatus) {
+      const response: ResponseMessage = JSON.parse(event.data);
+      if (
+        response.type &&
+        (response.type === "pre-defined" || "defined" || "serper")
+      ) {
+        responseMessages.push(response);
+      }
 
-    if (responseMessages.length === 3) {
-      console.log("All response received");
-      responseResolve(responseMessages);
-      clearTimeout(timeoutId);
-      resetStatus();
+      if (responseMessages.length === 3) {
+        console.log("All response received");
+        responseResolve(responseMessages);
+        clearTimeout(timeoutId);
+        resetStatus();
+      }
+    } else {
+      const response: EchoMessage = JSON.parse(event.data);
+      if (response.echo) echoResolve(response);
+      echoResolve = () => {};
+      responsePromise = undefined;
     }
   });
 
@@ -74,25 +94,38 @@ const resetStatus = () => {
   responseMessages = [];
 };
 
-const sendMessage = (message: string): Promise<ResponseMessage[]> => {
+const sendMessage = (
+  message: SendOutMessage,
+): Promise<ResponseMessage[]> | Promise<EchoMessage> => {
   if (waitingStatus && responsePromise) {
     return responsePromise;
   }
 
-  responsePromise = new Promise<ResponseMessage[]>((resolve, reject) => {
-    if (socket && socket.ws.readyState === WebSocket.OPEN) {
-      socket.ws.send(message);
-      waitingStatus = true;
-      responseResolve = resolve;
+  if (message.type === "recommend") {
+    responsePromise = new Promise<ResponseMessage[]>((resolve, reject) => {
+      if (socket && socket.ws.readyState === WebSocket.OPEN) {
+        socket.ws.send(JSON.stringify(message));
+        waitingStatus = true;
+        responseResolve = resolve;
 
-      timeoutId = window.setTimeout(() => {
-        reject(new Error("Timeout"));
-        resetStatus();
-      }, 10000);
-    } else {
-      reject(new Error("Websocket is not connected or ready"));
-    }
-  });
+        timeoutId = window.setTimeout(() => {
+          reject(new Error("Timeout"));
+          resetStatus();
+        }, 10000);
+      } else {
+        reject(new Error("Websocket is not connected or ready"));
+      }
+    });
+  } else {
+    responsePromise = new Promise<EchoMessage>((resolve, reject) => {
+      if (socket && socket.ws.readyState === WebSocket.OPEN) {
+        socket.ws.send(JSON.stringify(message));
+        echoResolve = resolve;
+      } else {
+        reject(new Error("Websocket is not connected or ready"));
+      }
+    });
+  }
 
   return responsePromise;
 };
@@ -102,7 +135,7 @@ const sendVideoProgress = (progress: number) => {
     type: "time",
     value: progress,
   };
-  sendMessage(JSON.stringify(message));
+  sendMessage(message);
 };
 
 const requestRecommend = (note: string): Promise<ResponseMessage[]> => {
@@ -110,7 +143,15 @@ const requestRecommend = (note: string): Promise<ResponseMessage[]> => {
     type: "recommend",
     value: note,
   };
-  return sendMessage(JSON.stringify(message));
+  return sendMessage(message) as Promise<ResponseMessage[]>;
+};
+
+const requestSaveNote = (note: NoteData): Promise<EchoMessage> => {
+  const message = {
+    type: "save",
+    ...note,
+  };
+  return sendMessage(message) as Promise<EchoMessage>;
 };
 
 const isWaiting = () => waitingStatus;
@@ -132,6 +173,7 @@ export {
   initializeWebsocket,
   sendMessage,
   sendVideoProgress,
+  requestSaveNote,
   requestRecommend,
   closeWebsocket,
 };

@@ -7,6 +7,7 @@ import MenuBar from "./meun-bar";
 import { useNoteEditor } from "./useNoteEditor";
 import { FloatHint } from "./FloatHint";
 import SettingMenu from "./SettingMenu";
+import { requestSaveNote } from "./client-websocket";
 
 const Note = () => {
   const [savedNote, setSavedNote] = useState<NoteData | undefined>({
@@ -30,6 +31,23 @@ const Note = () => {
       console.log("Note Saved with Id: ", updatedNote.id);
       console.log("Note Content: ", updatedNote.content);
       console.log("Note Date: ", updatedNote.date);
+    }
+  };
+
+  const saveNoteToServer = async () => {
+    saveNoteToLocal();
+    if (savedNote && editor) {
+      try {
+        const textNoteContent: string = editor.getText();
+        const textNote: NoteData = {
+          ...savedNote,
+          content: textNoteContent,
+        };
+        await requestSaveNote(textNote);
+        console.log("Note Saved to Server with Id: ", savedNote.id);
+      } catch (e) {
+        console.error("Cannot save note since:", e);
+      }
     }
   };
 
@@ -75,7 +93,10 @@ const Note = () => {
       <div className="fixed bottom-4 right-6 z-50">
         <div className="relative">
           <div className="absolute bottom-4 right-4">
-            <SettingMenu loadNoteToEditor={loadNoteFromLocal} />
+            <SettingMenu
+              loadNoteToEditor={loadNoteFromLocal}
+              saveNoteToServer={saveNoteToServer}
+            />
           </div>
         </div>
       </div>
