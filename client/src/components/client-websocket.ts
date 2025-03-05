@@ -8,31 +8,35 @@ export type Socket = {
   id: string;
 };
 
-type ResponseMessage = {
-  type: string;
+type ResponseMessage = VideoMessage | RecommendMessage[];
+
+type RecommendMessage = Message & {
+  type: "pre-defined" | "defined" | "serper";
   target: string;
   value: string;
 };
 
-type EchoMessage = {
-  echo: string;
+type VideoMessage = Message & {
+  type: "video";
+  keywords: string[];
 };
 
-type SendOutMessage = {
+type EchoMessage = Message & {
+  type: "echo";
+  value: string;
+};
+
+type Message = {
+  id: string;
   type: string;
 };
 
 export let socket: Socket | undefined = undefined;
 
-let waitingStatus: boolean = false; // true after recommend, reject all other sending requests if waiting
-let responsePromise:
-  | Promise<ResponseMessage[]>
-  | Promise<EchoMessage>
-  | undefined = undefined;
-let responseResolve: (value: ResponseMessage[]) => void = () => {}; // change state of promise, and return the value for await
-let echoResolve: (value: EchoMessage) => void = () => {};
-let timeoutId: number;
-let responseMessages: Array<ResponseMessage> = [];
+let waitingRecommend: boolean = false; // true after recommend, reject all other sending recommend requests if waiting
+let responseResolve: Map<string, (value: ResponseMessage) => void> = new Map(); // id-resolve map for handling multiple requests
+let timeouts: Map<string, number> = new Map(); // id-timeout map
+let responseRecommends: Array<RecommendMessage> = []; // only used for the recommend request
 
 const initializeWebsocket = () => {
   if (socket === undefined) {
@@ -58,27 +62,25 @@ const initializeWebsocket = () => {
   };
 
   socket.ws.addEventListener("message", (event: MessageEvent) => {
-    console.log("Message from server ", event.data);
-    if (waitingStatus) {
-      const response: ResponseMessage = JSON.parse(event.data);
-      if (
-        response.type &&
-        (response.type === "pre-defined" || "defined" || "serper")
-      ) {
-        responseMessages.push(response);
+    // console.log("Message from server ", event.data);
+    const response: Message = JSON.parse(event.data);
+    if (response.type === "echo") {
+      const echoResponse: EchoMessage = response as EchoMessage;
+      console.log("Echo response received: ", echoResponse.id);
+    } else if (response.type === "pre-defined" || "defined" || "serper") {
+      const recommendResponse: RecommendMessage = response as RecommendMessage;
+      responseRecommends.push(recommendResponse);
+      if (responseRecommends.length === 3) {
+        console.log("All recommend received");
+        tryResolve(response.id, responseRecommends);
+        resetRecStatus();
       }
-
-      if (responseMessages.length === 3) {
-        console.log("All response received");
-        responseResolve(responseMessages);
-        clearTimeout(timeoutId);
-        resetStatus();
-      }
+    } else if (response.type === "video") {
+      console.log("Video response received");
+      const videoResponse: VideoMessage = response as VideoMessage;
+      tryResolve(response.id, videoResponse);
     } else {
-      const response: EchoMessage = JSON.parse(event.data);
-      if (response.echo) echoResolve(response);
-      echoResolve = () => {};
-      responsePromise = undefined;
+      console.warn("Unknown response message: ", event.data);
     }
   });
 
@@ -87,83 +89,106 @@ const initializeWebsocket = () => {
   });
 };
 
-const resetStatus = () => {
-  waitingStatus = false;
-  responsePromise = undefined;
-  responseResolve = () => {};
-  responseMessages = [];
-};
-
-const sendMessage = (
-  message: SendOutMessage,
-): Promise<ResponseMessage[]> | Promise<EchoMessage> => {
-  if (waitingStatus && responsePromise) {
-    return responsePromise;
-  }
-
-  if (message.type === "recommend") {
-    responsePromise = new Promise<ResponseMessage[]>((resolve, reject) => {
-      if (socket && socket.ws.readyState === WebSocket.OPEN) {
-        socket.ws.send(JSON.stringify(message));
-        waitingStatus = true;
-        responseResolve = resolve;
-
-        timeoutId = window.setTimeout(() => {
-          reject(new Error("Timeout"));
-          resetStatus();
-        }, 10000);
-      } else {
-        reject(new Error("Websocket is not connected or ready"));
-      }
-    });
+/**
+ * Try to resolve the response message, if success, delete the resolve function and timeout
+ * @param response message from server
+ */
+const tryResolve = (id: string, response: ResponseMessage) => {
+  const resolve: ((value: ResponseMessage) => void) | undefined =
+    responseResolve.get(id);
+  if (resolve) {
+    resolve(response);
+    responseResolve.delete(id);
+    clearTimeout(timeouts.get(id));
+    timeouts.delete(id);
   } else {
-    responsePromise = new Promise<EchoMessage>((resolve, reject) => {
+    console.error("Failed to get resolve function for id: ", id);
+  }
+};
+
+const resetRecStatus = () => {
+  waitingRecommend = false;
+  responseRecommends = [];
+};
+
+const sendMessage = (message: Message): Promise<ResponseMessage> => {
+  const promise: Promise<ResponseMessage> = new Promise<ResponseMessage>(
+    (resolve, reject) => {
       if (socket && socket.ws.readyState === WebSocket.OPEN) {
+        message.id = shortUUID.generate();
         socket.ws.send(JSON.stringify(message));
-        echoResolve = resolve;
+        console.log(`Message ${message.id} sent, type: ${message.type}`);
+        if (message.type === "recommend") {
+          waitingRecommend = true;
+        }
+        if (message.type === "video" || message.type === "recommend") {
+          const timeOutId: number = window.setTimeout(() => {
+            reject(new Error("Timeout for message: " + message.id));
+            if (message.type === "recommend") {
+              resetRecStatus();
+            }
+            responseResolve.delete(message.id);
+            timeouts.delete(message.id);
+          }, 10 * 1000);
+          timeouts.set(message.id, timeOutId);
+          responseResolve.set(message.id, resolve);
+        }
       } else {
         reject(new Error("Websocket is not connected or ready"));
       }
-    });
-  }
+    },
+  );
 
-  return responsePromise;
+  return promise;
 };
 
-const sendVideoProgress = (progress: number) => {
+const sendVideoProgress = (progress: number): Promise<VideoMessage> => {
+  if (waitingRecommend) {
+    return Promise.reject(new Error("Already request for recommend"));
+  }
   const message = {
-    type: "time",
+    id: "",
+    type: "video",
     value: progress,
   };
-  sendMessage(message);
+  return sendMessage(message) as Promise<VideoMessage>;
 };
 
-const requestRecommend = (note: string): Promise<ResponseMessage[]> => {
+const requestRecommend = (note: string): Promise<RecommendMessage[]> => {
+  if (waitingRecommend) {
+    return Promise.reject(new Error("Already request for recommend"));
+  }
   const message = {
+    id: "",
     type: "recommend",
     value: note,
   };
-  return sendMessage(message) as Promise<ResponseMessage[]>;
+  return sendMessage(message) as Promise<RecommendMessage[]>;
 };
 
-const requestSaveNote = (note: NoteData): Promise<EchoMessage> => {
+const requestSaveNote = (note: NoteData) => {
   const message = {
+    id: "",
     type: "save",
-    ...note,
+    value: note,
   };
-  return sendMessage(message) as Promise<EchoMessage>;
+
+  sendMessage(message);
 };
 
-const isWaiting = () => waitingStatus;
+const isWaiting = () => waitingRecommend;
 
 const closeWebsocket = () => {
   if (
     socket &&
     (socket.ws.readyState === WebSocket.OPEN || WebSocket.CONNECTING)
   ) {
-    waitingStatus = false;
-    responsePromise = undefined;
-    responseResolve = () => {};
+    responseResolve.clear();
+    timeouts.forEach((timeout) => {
+      clearTimeout(timeout);
+    });
+    timeouts.clear();
+    resetRecStatus();
     socket.ws.close();
   }
   socket = undefined;

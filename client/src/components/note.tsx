@@ -43,7 +43,7 @@ const Note = () => {
           ...savedNote,
           content: textNoteContent,
         };
-        await requestSaveNote(textNote);
+        requestSaveNote(textNote);
         console.log("Note Saved to Server with Id: ", savedNote.id);
       } catch (e) {
         console.error("Cannot save note since:", e);
