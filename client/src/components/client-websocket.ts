@@ -10,13 +10,15 @@ export type Socket = {
 
 type ResponseMessage = VideoMessage | RecommendMessage[];
 
-type RecommendMessage = Message & {
-  type: "pre-defined" | "defined" | "serper";
+type RecommendTypes = "pre-defined" | "defined" | "serper";
+
+export type RecommendMessage = Message & {
+  type: RecommendTypes;
   target: string;
   value: string;
 };
 
-type VideoMessage = Message & {
+export type VideoMessage = Message & {
   type: "video";
   keywords: string[];
 };
@@ -29,6 +31,10 @@ type EchoMessage = Message & {
 type Message = {
   id: string;
   type: string;
+};
+
+const isValidRecommendType = (type: any): type is RecommendTypes => {
+  return type === "pre-defined" || type === "defined" || type === "serper";
 };
 
 export let socket: Socket | undefined = undefined;
@@ -67,7 +73,7 @@ const initializeWebsocket = () => {
     if (response.type === "echo") {
       const echoResponse: EchoMessage = response as EchoMessage;
       console.log("Echo response received: ", echoResponse.id);
-    } else if (response.type === "pre-defined" || "defined" || "serper") {
+    } else if (isValidRecommendType(response.type)) {
       const recommendResponse: RecommendMessage = response as RecommendMessage;
       responseRecommends.push(recommendResponse);
       if (responseRecommends.length === 3) {
