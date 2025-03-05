@@ -3,9 +3,10 @@ import os
 import json
 from serpapi import GoogleSearch
 from dotenv import load_dotenv
-import keyboard
-#import sockettest
-#from sockettest import send_message_once
+
+# import keyboard
+# import sockettest
+# from sockettest import send_message_once
 
 
 class SerpapiWrapper:
@@ -13,7 +14,7 @@ class SerpapiWrapper:
         self.base_url = "https://serpapi.com/search?engine="
         self.api_key = os.getenv("SERPAPI_API_KEY")
 
-    def SearchHotel(self,query,check_in,check_out):
+    def SearchHotel(self, query, check_in, check_out):
         params = {
             "engine": "google_hotels",
             "q": query,
@@ -29,21 +30,18 @@ class SerpapiWrapper:
 
         data = json.loads(search.get_raw_json())
         link = self.GetHotelLink(data)
-        combined_results = {
-            "link": link,
-            "hotels": self.GetHotelResult(data)
-        }
-        #return data['search_metadata']['prettify_html_file']
+        combined_results = {"link": link, "hotels": self.GetHotelResult(data)}
+        # return data['search_metadata']['prettify_html_file']
         formatted_output = {
             "type": "defined",
             "target": "hotel",
-            "value": [combined_results]
+            "value": [combined_results],
         }
-        json_str = json.dumps(formatted_output)
-        #send_message_once(json_str)
-        return json_str
+        # json_str = json.dumps(formatted_output)
+        # send_message_once(json_str)
+        return formatted_output
 
-    def SearchFlight(self,_departure_id,_arrival_id,_outbound_date,_return_date):
+    def SearchFlight(self, _departure_id, _arrival_id, _outbound_date, _return_date):
         params = {
             "engine": "google_flights",
             "hl": "en",
@@ -54,7 +52,7 @@ class SerpapiWrapper:
             "departure_id": _departure_id,
             "arrival_id": _arrival_id,
             "outbound_date": _outbound_date,
-            "return_date": _return_date
+            "return_date": _return_date,
         }
         search = GoogleSearch(params)
         outbound_data = json.loads(search.get_raw_json())
@@ -71,29 +69,29 @@ class SerpapiWrapper:
             "arrival_id": _arrival_id,
             "outbound_date": _outbound_date,
             "return_date": _return_date,
-            "departure_token": depature_token
+            "departure_token": depature_token,
         }
         return_search = GoogleSearch(return_params)
         return_data = json.loads(return_search.get_raw_json())
         refine_outbound_data = self.GetFlightResult(outbound_data)
-        #print(refine_outbound_data)
+        # print(refine_outbound_data)
         refine_return_data = self.GetFlightResult(return_data)
-        #print(refine_return_data)
+        # print(refine_return_data)
         combined_results = {
             "link": link,
             "outbound": refine_outbound_data,  # 去程结果
-            "return": refine_return_data  # 回程结果
+            "return": refine_return_data,  # 回程结果
         }
 
         formatted_output = {
             "type": "defined",
             "target": "flight",
-            "value": [combined_results]
+            "value": [combined_results],
         }
-        json_str = json.dumps(formatted_output)
-        return json_str
+        # json_str = json.dumps(formatted_output)
+        return formatted_output
 
-    def SearchRestaurant(self,query):
+    def SearchRestaurant(self, query):
         finalquery = query + " restaurant"
         params = {
             "engine": "google_local",
@@ -109,22 +107,22 @@ class SerpapiWrapper:
         combined_results = {
             "link": link,
             "query": finalquery,
-            "local_results": self.GetRestaurantResult(data)
+            "local_results": self.GetRestaurantResult(data),
         }
 
         ## TODO: Extract the restaurant information
         formatted_output = {
             "type": "defined",
             "target": "restaurant",
-            "value": [combined_results]
+            "value": [combined_results],
         }
-        json_str = json.dumps(formatted_output)
-        return json_str
+        # json_str = json.dumps(formatted_output)
+        return formatted_output
 
-    def GetHotelLink(self,data):
+    def GetHotelLink(self, data):
         return data["search_metadata"]["prettify_html_file"]
 
-    def GetHotelResult(self,data):
+    def GetHotelResult(self, data):
         result = []
 
         # 遍历 properties 列表的前三个元素
@@ -144,8 +142,7 @@ class SerpapiWrapper:
             thumbnails = []
             if "images" in property_item:
                 thumbnails = [
-                    img.get("thumbnail")
-                    for img in property_item["images"][:4]
+                    img.get("thumbnail") for img in property_item["images"][:4]
                 ]
 
             entry = {
@@ -154,13 +151,15 @@ class SerpapiWrapper:
                 "check_out_time": check_out_time,
                 "lowest_price": lowest_price,
                 "overall_rating": overall_rating,
-                "thumbnails": thumbnails
+                "thumbnails": thumbnails,
             }
 
             result.append(entry)
         return result
-    def GetFlightLink(self,data):
+
+    def GetFlightLink(self, data):
         return data["search_metadata"]["google_flights_url"]
+
     def GetFlightResult(self, data):
         result = []
         # 获取 best_flights 和 other_flights 数组
@@ -221,8 +220,10 @@ class SerpapiWrapper:
                 break
 
         return result
-    def GetRestaurantLink(self,data):
+
+    def GetRestaurantLink(self, data):
         return data["search_metadata"]["google_local_url"]
+
     def GetRestaurantResult(self, data):
         result = []
         for local_result_item in data["local_results"][:3]:
@@ -231,24 +232,18 @@ class SerpapiWrapper:
             price = local_result_item.get("price", "?")
             type = local_result_item.get("type", "")
 
-            entry = {
-                "name": name,
-                "rating": rating,
-                "price": price,
-                "type": type
-            }
+            entry = {"name": name, "rating": rating, "price": price, "type": type}
             result.append(entry)
         return result
+
 
 if __name__ == "__main__":
     load_dotenv("key.env")
     serpapi = SerpapiWrapper()
-    result = serpapi.SearchHotel("Tokyo","2025-10-10","2025-10-11")
+    result = serpapi.SearchHotel("Tokyo", "2025-10-10", "2025-10-11")
     # with open("test.json", "r", encoding="utf-8") as file:
     #     data = json.load(file)
-    #result = serpapi.SearchFlight("HND","AUS","2025-10-10","2025-10-11")
-    #result = serpapi.SearchRestaurant("Shibuya")
+    # result = serpapi.SearchFlight("HND","AUS","2025-10-10","2025-10-11")
+    # result = serpapi.SearchRestaurant("Shibuya")
 
-    print(result)
-
-
+    print(json.dumps(result))

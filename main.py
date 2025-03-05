@@ -101,5 +101,5 @@ if __name__ == "__main__":
             "00:02:34",
         ]  # start time of each section
         handler = VideoHandler(recommender, "Short_Test_Video.en.vtt", video_section)
-        sockettest.time_callback = handler.handle_time_change
+        sockettest.video_callback = handler.handle_time_change
         asyncio.run(sockettest.start())

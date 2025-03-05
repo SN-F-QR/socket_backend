@@ -23,7 +23,7 @@ class ChatRecommender:
         self.serper = SerperWrapper()
 
     def read_prompt(self, name):
-        with open(f"prompts/{name}.txt", "r",encoding='utf-8') as file:
+        with open(f"prompts/{name}.txt", "r", encoding="utf-8") as file:
             return file.read()
 
     async def create_chat(self, ai_name, text_input):
@@ -66,7 +66,7 @@ class ChatRecommender:
         args = json.loads(extract_json_array(response.choices[0].message.content))
         if args is None or len(args) == 0:
             print("There is no need to call serp api.")
-            return None
+            return self.format_result("serp", "", [])
 
         try:
             api_name = args[0]["tool"]
@@ -111,7 +111,7 @@ class ChatRecommender:
             "target": target,
             "value": result,
         }
-        return json.dumps(formatted_result)
+        return formatted_result
 
 
 if __name__ == "__main__":

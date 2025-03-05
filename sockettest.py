@@ -10,7 +10,7 @@ from utility import save_note
 
 connected_devices = set()
 # ws_loop = None  # 全局变量，用于保存后台线程的事件循环
-time_callback = None  # handle time change
+video_callback = None  # handle time change
 rec_callback = None  # call normal recommender
 serp_callback = None  # call serp api
 serper_callback = None  # call serper api
@@ -27,27 +27,33 @@ async def handler(websocket):
         websocket.ping_timeout = 15  # Seconds to wait for pong response
         async for message in websocket:
             print(f"Received: {message}")
-            await websocket.send(json.dumps({"echo": message}))
+            data = json.loads(message)
+            if "id" in data:
+                await websocket.send(
+                    json.dumps({"id": data["id"], "type": "echo", "value": message})
+                )
+            else:
+                await websocket.send(json.dumps({"echo": message}))
+
+            # TODO: set the proper format for links
             if re.match(r"https?:\/\/", message):
                 webbrowser.open_new_tab(message)
-            elif re.match(r"\{\"type\":[\s\S]*\}", message):
-                data = json.loads(message)
-                if data["type"] == "time":
-                    result = await time_callback(data["value"])
-                    create_task(send_message_once(result))
-                elif data["type"] == "recommend":
-                    tasks = [
-                        rec_callback(data["value"]),
-                        serp_callback(data["value"]),
-                        serper_callback(data["value"]),
-                    ]
-                    for future in asyncio.as_completed(tasks):
-                        result = await future
-                        create_task(send_message_once(result))
-                elif data["type"] == "save":
-                    saved_data = data.copy()
-                    saved_data.pop("type", None)
-                    save_note(saved_data)
+            elif data["type"] == "video":
+                result = await video_callback(data["value"])
+                create_task(send_message_once(result))
+            elif data["type"] == "recommend":
+                message_id = data["id"] if "id" in data else "no_id"
+                tasks = [
+                    rec_callback(data["value"]),
+                    serp_callback(data["value"]),
+                    serper_callback(data["value"]),
+                ]
+                for future in asyncio.as_completed(tasks):
+                    result = await future
+                    result["id"] = message_id
+                    create_task(send_message_once(json.dumps(result)))
+            elif data["type"] == "save":
+                save_note(data["value"])
 
     except websockets.exceptions.ConnectionClosed:
         print(f"Device disconnected: {websocket.remote_address}")
