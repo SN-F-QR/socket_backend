@@ -28,11 +28,16 @@ class SerpapiWrapper:
         search = GoogleSearch(params)
 
         data = json.loads(search.get_raw_json())
+        link = self.GetHotelLink(data)
+        combined_results = {
+            "link": link,
+            "hotels": self.GetHotelResult(data)
+        }
         #return data['search_metadata']['prettify_html_file']
         formatted_output = {
             "type": "defined",
             "target": "hotel",
-            "value": self.GetHotelResult(data)
+            "value": [combined_results]
         }
         json_str = json.dumps(formatted_output)
         #send_message_once(json_str)
@@ -53,6 +58,7 @@ class SerpapiWrapper:
         }
         search = GoogleSearch(params)
         outbound_data = json.loads(search.get_raw_json())
+        link = self.GetFlightLink(outbound_data)
         depature_token = outbound_data["best_flights"][0]["departure_token"]
         return_params = {
             "engine": "google_flights",
@@ -74,6 +80,7 @@ class SerpapiWrapper:
         refine_return_data = self.GetFlightResult(return_data)
         #print(refine_return_data)
         combined_results = {
+            "link": link,
             "outbound": refine_outbound_data,  # 去程结果
             "return": refine_return_data  # 回程结果
         }
@@ -98,8 +105,9 @@ class SerpapiWrapper:
         }
         search = GoogleSearch(params)
         data = json.loads(search.get_raw_json())
-
+        link = self.GetRestaurantLink(data)
         combined_results = {
+            "link": link,
             "query": finalquery,
             "local_results": self.GetRestaurantResult(data)
         }
@@ -113,6 +121,8 @@ class SerpapiWrapper:
         json_str = json.dumps(formatted_output)
         return json_str
 
+    def GetHotelLink(self,data):
+        return data["search_metadata"]["prettify_html_file"]
 
     def GetHotelResult(self,data):
         result = []
@@ -149,7 +159,8 @@ class SerpapiWrapper:
 
             result.append(entry)
         return result
-
+    def GetFlightLink(self,data):
+        return data["search_metadata"]["google_flights_url"]
     def GetFlightResult(self, data):
         result = []
         # 获取 best_flights 和 other_flights 数组
@@ -210,7 +221,8 @@ class SerpapiWrapper:
                 break
 
         return result
-
+    def GetRestaurantLink(self,data):
+        return data["search_metadata"]["google_local_url"]
     def GetRestaurantResult(self, data):
         result = []
         for local_result_item in data["local_results"][:3]:
@@ -231,11 +243,11 @@ class SerpapiWrapper:
 if __name__ == "__main__":
     load_dotenv("key.env")
     serpapi = SerpapiWrapper()
-    #result = serpapi.SearchHotel("Tokyo","2025-10-10","2025-10-11")
+    result = serpapi.SearchHotel("Tokyo","2025-10-10","2025-10-11")
     # with open("test.json", "r", encoding="utf-8") as file:
     #     data = json.load(file)
     #result = serpapi.SearchFlight("HND","AUS","2025-10-10","2025-10-11")
-    result = serpapi.SearchRestaurant("Shibuya")
+    #result = serpapi.SearchRestaurant("Shibuya")
 
     print(result)
 

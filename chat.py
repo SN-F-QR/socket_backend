@@ -23,7 +23,7 @@ class ChatRecommender:
         self.serper = SerperWrapper()
 
     def read_prompt(self, name):
-        with open(f"prompts/{name}.txt", "r") as file:
+        with open(f"prompts/{name}.txt", "r",encoding='utf-8') as file:
             return file.read()
 
     async def create_chat(self, ai_name, text_input):
