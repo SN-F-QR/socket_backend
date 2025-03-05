@@ -85,9 +85,17 @@ class VideoHandler:
         """
         time_value = int(current_time)
         format_time = f"{time_value // 3600:02d}:{(time_value % 3600) // 60:02d}:{time_value % 60:02d}"
-        content = self.get_time_span(format_time, self.transcripts).content
+        try:
+            content = self.get_time_span(format_time, self.transcripts).content
+        except AttributeError:
+            print(f"Failed to find content at {format_time}")
+            return {"type": "video", "keywords": []}
         keywords = await self.recommender.request_video_keywords(content)
-        return keywords
+        format_keywords = {
+            "type": "video",
+            "keywords": list(map(lambda x: x["keyword"], keywords)),
+        }
+        return format_keywords
 
     async def handle_time_change(self, current_time):
         """
@@ -168,3 +176,10 @@ if __name__ == "__main__":
     # print("Testing get_transcript:")
     # print(handler.get_transcript("00:00:45"))
     # print(handler.get_transcript("00:01:45"))
+
+    # print("Testing get_time_span:")
+    # time_value = 120
+    # format_time = f"{time_value // 3600:02d}:{(time_value % 3600) // 60:02d}:{time_value % 60:02d}"
+    # print("Current time:", format_time)
+    # print(handler.get_time_span(format_time, handler.transcripts))
+    # print(handler.get_time_span("00:01:45", handler.transcripts))
