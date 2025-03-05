@@ -1,13 +1,26 @@
 import React, { useState, useRef } from "react";
-import { sendVideoProgress } from "./client-websocket";
+import { Editor } from "@tiptap/react";
+import VideoKeyBar from "./VideoKeyBar";
+import {
+  sendVideoProgress,
+  VideoMessage,
+  requestRecommend,
+} from "./client-websocket";
 
-const Player = () => {
+type PlayerProps = {
+  editor: Editor | null;
+};
+
+const Player = (props: PlayerProps) => {
   const [videoPath, setVideoPath] = useState<string | undefined>(undefined); // fake path
   const [videoName, setVideoName] = useState<string | undefined>(undefined);
   const [subtitlePath, setSubtitlePath] = useState<string | undefined>(
     undefined,
   );
-  const progress = useRef<number>(0); // current video progress
+  const [isPaused, setIsPaused] = useState<boolean>(true);
+  const videoRef = useRef<HTMLVideoElement>(null); // current video progress
+
+  const [keywords, setKeywords] = useState<string[]>(["Hotel", "Food", "789"]);
 
   const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -23,15 +36,40 @@ const Player = () => {
         }
       }
     }
+    setIsPaused(true);
   };
 
-  const getCurrentTime = (e: React.ChangeEvent<HTMLVideoElement>) => {
-    const curSec = Math.round(e.target.currentTime);
-    if (curSec !== progress.current) {
-      progress.current = curSec;
-      sendVideoProgress(curSec);
-      console.log("current time", curSec);
+  const requestKeywords = async () => {
+    if (videoRef.current && isPaused) {
+      try {
+        const response: VideoMessage = await sendVideoProgress(
+          videoRef.current.currentTime,
+        );
+        setKeywords(response.keywords);
+      } catch (error) {
+        console.error("Error while requesting keywords: ", error);
+      }
     }
+  };
+
+  const requestVideoRecommend = async (keyword: string) => {
+    if (videoRef.current && isPaused && props.editor) {
+      try {
+        const context: string = props.editor
+          .getText()
+          .concat("<focus> " + keyword + " </focus>");
+        const recommendations = await requestRecommend(context);
+        console.log(
+          `Successfully get ${recommendations.length} recommendations`,
+        );
+      } catch (error) {
+        console.error("Error while requesting video recommend: ", error);
+      }
+    }
+  };
+
+  const toggleSuggest = () => {
+    setIsPaused(!isPaused);
   };
 
   return (
@@ -62,12 +100,23 @@ const Player = () => {
           <video
             className="aspect-video max-w-full"
             controls
+            ref={videoRef}
             src={videoPath}
-            onTimeUpdate={getCurrentTime}
+            onPause={toggleSuggest}
+            onPlay={toggleSuggest}
+            onTimeUpdate={() => setKeywords([])}
           >
             <track default src={subtitlePath} srcLang="en" />
           </video>
         </div>
+      )}
+      {videoPath && (
+        <VideoKeyBar
+          isPaused={isPaused}
+          keywords={keywords}
+          requestKeywords={requestKeywords}
+          requestRecommend={requestVideoRecommend}
+        />
       )}
     </div>
   );

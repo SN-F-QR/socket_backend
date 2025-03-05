@@ -25,7 +25,7 @@ const App = () => {
 
   return (
     <div className="flex h-screen overflow-y-auto p-2 max-md:flex-col md:justify-evenly md:space-x-5 md:overflow-clip">
-      <Player />
+      <Player editor={editor} />
       <div className="h-full flex-none md:w-1/2">
         <Note
           editor={editor}

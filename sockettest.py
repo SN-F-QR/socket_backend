@@ -28,9 +28,10 @@ async def handler(websocket):
         async for message in websocket:
             print(f"Received: {message}")
             data = json.loads(message)
+            message_id = data["id"] if "id" in data else "no_id"
             if "id" in data:
                 await websocket.send(
-                    json.dumps({"id": data["id"], "type": "echo", "value": message})
+                    json.dumps({"id": message_id, "type": "echo", "value": message})
                 )
             else:
                 await websocket.send(json.dumps({"echo": message}))
@@ -40,9 +41,9 @@ async def handler(websocket):
                 webbrowser.open_new_tab(message)
             elif data["type"] == "video":
                 result = await video_callback(data["value"])
-                create_task(send_message_once(result))
+                result["id"] = message_id
+                create_task(send_message_once(json.dumps(result)))
             elif data["type"] == "recommend":
-                message_id = data["id"] if "id" in data else "no_id"
                 tasks = [
                     rec_callback(data["value"]),
                     serp_callback(data["value"]),
