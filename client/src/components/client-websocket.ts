@@ -10,7 +10,7 @@ export type Socket = {
 
 type ResponseMessage = VideoMessage | RecommendMessage[];
 
-type RecommendTypes = "pre-defined" | "defined" | "serper";
+type RecommendTypes = "widgets" | "defined" | "serper";
 
 export type RecommendMessage = Message & {
   type: RecommendTypes;
@@ -34,7 +34,7 @@ type Message = {
 };
 
 const isValidRecommendType = (type: any): type is RecommendTypes => {
-  return type === "pre-defined" || type === "defined" || type === "serper";
+  return type === "widgets" || type === "defined" || type === "serper";
 };
 
 export let socket: Socket | undefined = undefined;

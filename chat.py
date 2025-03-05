@@ -65,9 +65,9 @@ class ChatRecommender:
         print(f"Serp API is starting in {start_time:.3f}")
         response = await self.create_chat("serp", text_input)
         args = json.loads(extract_json_array(response.choices[0].message.content))
-        if args is None or len(args) == 0:
+        if args is None or len(args) == 0 or args[0]["tool"] == "":
             print("There is no need to call serp api.")
-            return self.format_result("serp", "", [])
+            return self.format_result("defined", "", [])
 
         try:
             api_name = args[0]["tool"]
@@ -87,6 +87,7 @@ class ChatRecommender:
             return result
         except AssertionError:
             print("API not found, check LLM response if it is correct.")
+            return self.format_result("defined", "", [])
 
     async def request_serper(self, text_input):
         start_time = time.perf_counter()
