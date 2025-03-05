@@ -1,15 +1,35 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { EditorContent, Editor } from "@tiptap/react";
 import shortUUID from "short-uuid";
 
 import { NoteData } from "./note-manager";
 import MenuBar from "./meun-bar";
-import { useNoteEditor } from "./useNoteEditor";
+import { useNoteEditor, TypeState } from "./useNoteEditor";
 import { FloatHint } from "./FloatHint";
 import SettingMenu from "./SettingMenu";
 import { requestSaveNote } from "./client-websocket";
 
-const Note = () => {
+type NoteProps = {
+  editor: Editor | null;
+  typeState: React.RefObject<TypeState>;
+  updateCount: number;
+  recommending: boolean;
+  setUpdateCount: React.Dispatch<React.SetStateAction<number>>;
+  selectedRecommend: (editor: Editor) => Promise<void>;
+  handleH1Toggle: () => void;
+};
+
+const Note = (props: NoteProps) => {
+  const {
+    editor,
+    typeState,
+    updateCount,
+    recommending,
+    setUpdateCount,
+    selectedRecommend,
+    handleH1Toggle,
+  } = props;
+
   const [savedNote, setSavedNote] = useState<NoteData | undefined>({
     id: shortUUID.generate(),
     content: "",
@@ -51,8 +71,26 @@ const Note = () => {
     }
   };
 
-  const { editor, typeState, recommending, selectedRecommend, handleH1Toggle } =
-    useNoteEditor(saveNoteToLocal);
+  // const {
+  //   editor,
+  //   typeState,
+  //   updateCount,
+  //   recommending,
+  //   setUpdateCount,
+  //   selectedRecommend,
+  //   handleH1Toggle,
+  // } = useNoteEditor();
+
+  const autoSaveNote = () => {
+    if (updateCount > 10) {
+      saveNoteToLocal();
+      setUpdateCount(0);
+    }
+  };
+
+  useEffect(() => {
+    autoSaveNote();
+  }, [updateCount]);
 
   const loadNoteFromLocal = (id: string) => {
     // clean the current empty note

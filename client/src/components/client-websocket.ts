@@ -148,6 +148,7 @@ const sendMessage = (message: Message): Promise<ResponseMessage> => {
   return promise;
 };
 
+// Note: will not set waitingRecommend to true
 const sendVideoProgress = (progress: number): Promise<VideoMessage> => {
   if (waitingRecommend) {
     return Promise.reject(new Error("Already request for recommend"));

@@ -14,17 +14,17 @@ import shortUUID from "short-uuid";
 
 import { requestRecommend } from "./client-websocket";
 
-type EditorWrap = {
-  editor: Editor;
-};
-
-type TypeState = {
+export type TypeState = {
   typingNewH1: boolean;
   newH1Id: string;
   newH1ByButton: boolean;
 };
 
-export const useNoteEditor = (saveNoteToLocal: () => void) => {
+type EditorWrap = {
+  editor: Editor;
+};
+
+export const useNoteEditor = () => {
   const extensions = [
     Document,
     Paragraph,
@@ -43,14 +43,14 @@ export const useNoteEditor = (saveNoteToLocal: () => void) => {
     newH1ByButton: false,
   });
 
-  const updateCount = useRef<number>(0);
+  const [updateCount, setUpdateCount] = useState<number>(0);
   const maxUpdateCount = 10;
 
   const count = () => {
-    updateCount.current += 1;
-    if (updateCount.current > maxUpdateCount) {
-      saveNoteToLocal();
-      updateCount.current = 0;
+    setUpdateCount((prev) => prev + 1);
+    if (updateCount > maxUpdateCount) {
+      // saveNoteToLocal();
+      setUpdateCount(0);
     }
   };
 
@@ -286,7 +286,9 @@ export const useNoteEditor = (saveNoteToLocal: () => void) => {
   return {
     editor,
     typeState,
+    updateCount,
     recommending,
+    setUpdateCount,
     selectedRecommend,
     handleH1Toggle,
   };
