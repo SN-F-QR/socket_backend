@@ -6,7 +6,7 @@ import json
 
 from dotenv import load_dotenv
 from asyncio import create_task
-from SerpapiWrapper import SerpapiWrapper
+from utility import save_note
 
 connected_devices = set()
 # ws_loop = None  # 全局变量，用于保存后台线程的事件循环
@@ -27,7 +27,7 @@ async def handler(websocket):
         websocket.ping_timeout = 15  # Seconds to wait for pong response
         async for message in websocket:
             print(f"Received: {message}")
-            await websocket.send(json.dumps({"Echo": message}))
+            await websocket.send(json.dumps({"echo": message}))
             if re.match(r"https?:\/\/", message):
                 webbrowser.open_new_tab(message)
             elif re.match(r"\{\"type\":[\s\S]*\}", message):
@@ -36,17 +36,6 @@ async def handler(websocket):
                     result = await time_callback(data["value"])
                     create_task(send_message_once(result))
                 elif data["type"] == "recommend":
-                    # await asyncio.gather(
-                    #     send_message_once(
-                    #         await rec_callback(data["value"]), "pre-defined"
-                    #     ),
-                    #     # send_message_once(
-                    #     #     await serp_callback(data["value"])
-                    #     # ),  # handled in serpapiwarpper
-                    #     send_message_once(
-                    #         await serper_callback(data["value"]), "serper"
-                    #     ),
-                    # )
                     tasks = [
                         rec_callback(data["value"]),
                         serp_callback(data["value"]),
@@ -55,6 +44,10 @@ async def handler(websocket):
                     for future in asyncio.as_completed(tasks):
                         result = await future
                         create_task(send_message_once(result))
+                elif data["type"] == "save":
+                    saved_data = data.copy()
+                    saved_data.pop("type", None)
+                    save_note(saved_data)
 
     except websockets.exceptions.ConnectionClosed:
         print(f"Device disconnected: {websocket.remote_address}")

@@ -7,6 +7,7 @@ import MenuBar from "./meun-bar";
 import { useNoteEditor } from "./useNoteEditor";
 import { FloatHint } from "./FloatHint";
 import SettingMenu from "./SettingMenu";
+import { requestSaveNote } from "./client-websocket";
 
 const Note = () => {
   const [savedNote, setSavedNote] = useState<NoteData | undefined>({
@@ -33,6 +34,23 @@ const Note = () => {
     }
   };
 
+  const saveNoteToServer = async () => {
+    saveNoteToLocal();
+    if (savedNote && editor) {
+      try {
+        const textNoteContent: string = editor.getText();
+        const textNote: NoteData = {
+          ...savedNote,
+          content: textNoteContent,
+        };
+        await requestSaveNote(textNote);
+        console.log("Note Saved to Server with Id: ", savedNote.id);
+      } catch (e) {
+        console.error("Cannot save note since:", e);
+      }
+    }
+  };
+
   const { editor, typeState, recommending, selectedRecommend, handleH1Toggle } =
     useNoteEditor(saveNoteToLocal);
 
@@ -54,7 +72,7 @@ const Note = () => {
   };
 
   return (
-    <div className="relative w-full overflow-y-scroll rounded-md border">
+    <div className="relative h-full w-full overflow-y-scroll rounded-md border">
       <div className="sticky top-0 z-50 px-2 py-2">
         <MenuBar
           editor={editor as Editor}
@@ -75,7 +93,10 @@ const Note = () => {
       <div className="fixed bottom-4 right-6 z-50">
         <div className="relative">
           <div className="absolute bottom-4 right-4">
-            <SettingMenu loadNoteToEditor={loadNoteFromLocal} />
+            <SettingMenu
+              loadNoteToEditor={loadNoteFromLocal}
+              saveNoteToServer={saveNoteToServer}
+            />
           </div>
         </div>
       </div>

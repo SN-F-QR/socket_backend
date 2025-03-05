@@ -6,5 +6,6 @@ __pycache__/
 .idea/.name
 
 /prompts
+/notes
 test_case.csv
 test.json
