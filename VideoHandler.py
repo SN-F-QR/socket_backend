@@ -1,12 +1,11 @@
 from openai import OpenAI
 from dotenv import load_dotenv
-from PDFReader import Recommender
 import webvtt
 from datetime import datetime, time
 from functools import reduce
 import json
-import re
-import os
+from chat import ChatRecommender
+from utility import extract_json_array
 
 
 # TODO: add cache for transcript
@@ -25,9 +24,9 @@ class VideoHandler:
         self.recommender = recommender
 
         # Generate auto recommendation contents
-        for section in self.section_recommend:
-            links = self.request_recommendation(section.content)
-            section.links = json.loads(links)
+        # for section in self.section_recommend:
+        #     links = self.request_recommendation(section.content)
+        #     section.links = json.loads(links)
 
     def read_sections(self, split_time):
         """
@@ -79,14 +78,16 @@ class VideoHandler:
             if span.within_span(time):
                 return span
 
-    def request_recommendation(self, content):
+    async def request_keywords(self, current_time):
         """
-        Request section recommendation results from llm
+        Request keyword results from llm
+        current_time: current time of the video, in seconds
         """
-        wrapped_content = "<video transcript>" + content + "</video transcript>"
-        result = self.recommender.execute_search_agent(wrapped_content)
-        print(f"LLM outputs:\n {result}")
-        return result
+        time_value = int(current_time)
+        format_time = f"{time_value // 3600:02d}:{(time_value % 3600) // 60:02d}:{time_value % 60:02d}"
+        content = self.get_time_span(format_time, self.transcripts).content
+        keywords = await self.recommender.request_video_keywords(content)
+        return keywords
 
     async def handle_time_change(self, current_time):
         """
@@ -100,12 +101,6 @@ class VideoHandler:
             # return "test result"
             return cur_section.links  # TODO: return all things
         return None
-
-    # def handle_user_event(self, event):
-    #     """
-    #     Handle user events
-    #     """
-    #     pass
 
 
 # TimeSpan represent a video section or a transcript
@@ -155,9 +150,18 @@ class TimeSpan:
 if __name__ == "__main__":
     # TODO: ensure the time accuracy
     load_dotenv("key.env")
-    recommender = Recommender(search_assistant_id=os.getenv("VIDEO_ASSISTANT_ID"))
-    video_section = ["00:00:00", "00:00:57", "00:02:34"]  # start time of each section
-    handler = VideoHandler(recommender, "Short_Test_Video.en.vtt", video_section)
+    recommender = ChatRecommender()
+    # video_section = ["00:00:00", "00:00:57", "00:02:34"]  # start time of each section
+    handler = VideoHandler(recommender, "Short_Test_Video.en.vtt")
+    print("Testing keywords acquirement:")
+
+    async def test_keywords(time):
+        keywords = await handler.request_keywords(time)
+        print(keywords)
+
+    import asyncio
+
+    asyncio.run(test_keywords("135"))
     # print("Testing read_transcripts:")
     # for transcript in handler.transcripts:
     #     print(transcript)

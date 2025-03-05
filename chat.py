@@ -18,6 +18,7 @@ class ChatRecommender:
             "normal": self.read_prompt("normal"),
             "serp": self.read_prompt("serp"),
             "serper": self.read_prompt("serper"),
+            "video": self.read_prompt("video"),
         }
         self.serp_wrapper = SerpapiWrapper()
         self.serper = SerperWrapper()
@@ -26,9 +27,9 @@ class ChatRecommender:
         with open(f"prompts/{name}.txt", "r", encoding="utf-8") as file:
             return file.read()
 
-    async def create_chat(self, ai_name, text_input):
+    async def create_chat(self, ai_name, text_input, format_tag="<plan>"):
         assert self.prompts.keys().__contains__(ai_name)
-        format_input = self.format_text(text_input)
+        format_input = self.format_text(text_input, format_tag)
         completion = await self.client.chat.completions.create(
             model="gpt-4o",
             messages=[
@@ -102,8 +103,14 @@ class ChatRecommender:
 
         return self.format_result("serper", "", links)
 
-    def format_text(self, text):
-        return "<plan>" + text + "</plan>"
+    async def request_video_keywords(self, text_input):
+        response = await self.create_chat("video", text_input, "<transcript>")
+        keywords = json.loads(extract_json_array(response.choices[0].message.content))
+        print(f"Video Keywords:\n {keywords}")
+        return keywords
+
+    def format_text(self, text, format_tag="<plan>"):
+        return format_tag + text + format_tag[0] + "/" + format_tag[1:]
 
     def format_result(self, type, target, result):
         formatted_result = {
