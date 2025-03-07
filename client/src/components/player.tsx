@@ -19,6 +19,9 @@ const Player = (props: PlayerProps) => {
   );
   const [isPaused, setIsPaused] = useState<boolean>(true);
   const [requestingKeys, setRequestingKeys] = useState<boolean>(false);
+  const [recommendedKey, setRecommendedKey] = useState<string | undefined>(
+    undefined,
+  );
   const videoRef = useRef<HTMLVideoElement>(null); // current video progress
 
   const [keywords, setKeywords] = useState<string[]>(["Hotel", "Food", "789"]);
@@ -59,6 +62,7 @@ const Player = (props: PlayerProps) => {
   const requestVideoRecommend = async (keyword: string) => {
     if (videoRef.current && isPaused && props.editor) {
       try {
+        setRecommendedKey(keyword);
         const context: string = props.editor
           .getText()
           .concat("<focus> " + keyword + " </focus>");
@@ -68,6 +72,8 @@ const Player = (props: PlayerProps) => {
         );
       } catch (error) {
         console.error("Error while requesting video recommend: ", error);
+      } finally {
+        setRecommendedKey(undefined);
       }
     }
   };
@@ -119,6 +125,7 @@ const Player = (props: PlayerProps) => {
           isPaused={isPaused}
           keywords={keywords}
           requestingKeys={requestingKeys}
+          recommendedKey={recommendedKey}
           requestKeywords={requestKeywords}
           requestRecommend={requestVideoRecommend}
         />

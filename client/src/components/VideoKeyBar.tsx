@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { SparklesIcon } from "@heroicons/react/24/outline";
+import { SparklesIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
 
 type VideoKeyBarProps = {
   keywords: string[];
   isPaused: boolean;
   requestingKeys: boolean;
+  recommendedKey: string | undefined;
   requestKeywords: () => void;
   requestRecommend: (keyword: string) => void;
 };
@@ -23,6 +24,9 @@ const VideoKeyBar = (props: VideoKeyBarProps) => {
           props.requestRecommend(keyword);
         }}
       >
+        {props.recommendedKey === keyword && (
+          <ArrowPathIcon className="mr-1 inline-flex size-5 animate-spin place-self-center" />
+        )}
         {keyword}
       </button>
     );
