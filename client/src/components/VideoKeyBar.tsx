@@ -4,6 +4,7 @@ import { SparklesIcon } from "@heroicons/react/24/outline";
 type VideoKeyBarProps = {
   keywords: string[];
   isPaused: boolean;
+  requestingKeys: boolean;
   requestKeywords: () => void;
   requestRecommend: (keyword: string) => void;
 };
@@ -27,6 +28,20 @@ const VideoKeyBar = (props: VideoKeyBarProps) => {
     );
   });
 
+  // Placeholder when waiting for keywords
+  const waitingButton = (
+    <>
+      {[...Array(3)].map((_, index) => (
+        <button
+          key={`waiting-${index}`}
+          className={`${baseStyle} rounded-full border border-gray-200 bg-white/90 px-3 py-1.5 shadow-sm backdrop-blur-sm hover:shadow-md`}
+        >
+          <div className="h-2 w-16 animate-pulse rounded bg-slate-300"></div>
+        </button>
+      ))}
+    </>
+  );
+
   return (
     <div
       className={`flex flex-wrap space-x-2 ${props.isPaused ? "opacity-100" : "invisible translate-y-2 opacity-0"} transform-all duration-300`}
@@ -37,7 +52,7 @@ const VideoKeyBar = (props: VideoKeyBarProps) => {
       >
         <SparklesIcon className="size-5" />
       </button>
-      {keywordButtons}
+      {props.requestingKeys ? waitingButton : keywordButtons}
     </div>
   );
 };

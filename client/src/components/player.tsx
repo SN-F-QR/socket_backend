@@ -18,6 +18,7 @@ const Player = (props: PlayerProps) => {
     undefined,
   );
   const [isPaused, setIsPaused] = useState<boolean>(true);
+  const [requestingKeys, setRequestingKeys] = useState<boolean>(false);
   const videoRef = useRef<HTMLVideoElement>(null); // current video progress
 
   const [keywords, setKeywords] = useState<string[]>(["Hotel", "Food", "789"]);
@@ -40,14 +41,17 @@ const Player = (props: PlayerProps) => {
   };
 
   const requestKeywords = async () => {
-    if (videoRef.current && isPaused) {
+    if (videoRef.current && isPaused && !requestingKeys) {
       try {
+        setRequestingKeys(true);
         const response: VideoMessage = await sendVideoProgress(
           videoRef.current.currentTime,
         );
         setKeywords(response.keywords);
       } catch (error) {
         console.error("Error while requesting keywords: ", error);
+      } finally {
+        setRequestingKeys(false);
       }
     }
   };
@@ -114,6 +118,7 @@ const Player = (props: PlayerProps) => {
         <VideoKeyBar
           isPaused={isPaused}
           keywords={keywords}
+          requestingKeys={requestingKeys}
           requestKeywords={requestKeywords}
           requestRecommend={requestVideoRecommend}
         />
