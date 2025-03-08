@@ -1,11 +1,8 @@
 import React, { useState, useRef } from "react";
 import { Editor } from "@tiptap/react";
 import VideoKeyBar from "./VideoKeyBar";
-import {
-  sendVideoProgress,
-  VideoMessage,
-  requestRecommend,
-} from "./client-websocket";
+import { sendVideoProgress, VideoMessage } from "./client-websocket";
+import useRecommender from "./useRecommender";
 
 type PlayerProps = {
   editor: Editor | null;
@@ -25,6 +22,8 @@ const Player = (props: PlayerProps) => {
   const videoRef = useRef<HTMLVideoElement>(null); // current video progress
 
   const [keywords, setKeywords] = useState<string[]>(["Hotel", "Food", "789"]);
+
+  const { requestRecommendation } = useRecommender();
 
   const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -61,20 +60,9 @@ const Player = (props: PlayerProps) => {
 
   const requestVideoRecommend = async (keyword: string) => {
     if (videoRef.current && isPaused && props.editor) {
-      try {
-        setRecommendedKey(keyword);
-        const context: string = props.editor
-          .getText()
-          .concat("<focus> " + keyword + " </focus>");
-        const recommendations = await requestRecommend(context);
-        console.log(
-          `Successfully get ${recommendations.length} recommendations`,
-        );
-      } catch (error) {
-        console.error("Error while requesting video recommend: ", error);
-      } finally {
-        setRecommendedKey(undefined);
-      }
+      setRecommendedKey(keyword);
+      await requestRecommendation(keyword);
+      setRecommendedKey(undefined);
     }
   };
 

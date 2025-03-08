@@ -2,7 +2,8 @@ import { pdfjs } from "react-pdf";
 import { Document, Page } from "react-pdf";
 import { useState, useRef, useEffect } from "react";
 import { useResizeObserver } from "./useResizeObserver";
-import { SparklesIcon } from "@heroicons/react/24/outline";
+import { SparklesIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
+import useRecommender from "./useRecommender";
 
 import "react-pdf/dist/esm/Page/AnnotationLayer.css";
 import "react-pdf/dist/esm/Page/TextLayer.css";
@@ -27,6 +28,7 @@ const PdfReader = () => {
   const [containerWidth, setContainerWidth] = useState<number>();
 
   const [showRec, setShowRec] = useState<boolean>(false);
+  const { waitingState, requestRecommendation } = useRecommender();
 
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
@@ -68,7 +70,7 @@ const PdfReader = () => {
       className="relative h-full w-full place-self-center overflow-x-hidden overflow-y-scroll rounded border p-2"
     >
       <Document
-        file={"../../Reading Textbook (1).pdf"}
+        file={"../../London Visitor Guide.pdf"}
         onLoadSuccess={onDocumentLoadSuccess}
         options={options}
       >
@@ -84,10 +86,19 @@ const PdfReader = () => {
           })}
       </Document>
       <button
-        className={`fixed bottom-8 right-[53%] z-30 ${baseStyle} rounded-full border border-gray-200 bg-sky-500 p-2 text-white shadow-sm transition duration-300 hover:bg-sky-600 ${showRec ? "opacity-100" : "invisible translate-y-3 opacity-0"}`}
-        onClick={() => console.log(window.getSelection()?.toString())}
+        className={`fixed bottom-8 right-[53%] z-30 ${baseStyle} rounded-full bg-gradient-to-r from-sky-500 to-indigo-500 p-2 text-white shadow-lg transition duration-300 hover:scale-[1.05] ${showRec ? "opacity-100" : "invisible translate-y-3 opacity-0"}`}
+        onClick={() => {
+          const selectionText = window.getSelection()?.toString();
+          if (selectionText) {
+            requestRecommendation(selectionText);
+          }
+        }}
       >
-        <SparklesIcon className="size-5" />
+        {waitingState ? (
+          <ArrowPathIcon className="size-5 animate-spin" />
+        ) : (
+          <SparklesIcon className="size-5" />
+        )}
       </button>
     </div>
   );

@@ -51,7 +51,7 @@ const VideoKeyBar = (props: VideoKeyBarProps) => {
       className={`flex flex-wrap space-x-2 ${props.isPaused ? "opacity-100" : "invisible translate-y-2 opacity-0"} transform-all duration-300`}
     >
       <button
-        className={`${baseStyle} rounded-full border border-gray-200 bg-sky-500 p-2 text-white shadow-sm transition duration-300 hover:bg-sky-600`}
+        className={`${baseStyle} rounded-full border border-gray-200 bg-gradient-to-r from-sky-500 to-indigo-500 p-2 text-white shadow-sm transition duration-300 hover:scale-[1.05] hover:shadow-md`}
         onClick={props.requestKeywords}
       >
         <SparklesIcon className="size-5" />
