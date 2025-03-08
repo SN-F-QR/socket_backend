@@ -1,7 +1,8 @@
 import { pdfjs } from "react-pdf";
 import { Document, Page } from "react-pdf";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useResizeObserver } from "./useResizeObserver";
+import { SparklesIcon } from "@heroicons/react/24/outline";
 
 import "react-pdf/dist/esm/Page/AnnotationLayer.css";
 import "react-pdf/dist/esm/Page/TextLayer.css";
@@ -17,10 +18,15 @@ const options = {
 };
 
 const PdfReader = () => {
+  const baseStyle =
+    "transition-all duration-300 cursor-pointer whitespace-nowrap";
+
   const [numPages, setNumPages] = useState<number | undefined>(undefined);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState<number>();
+
+  const [showRec, setShowRec] = useState<boolean>(false);
 
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
@@ -35,6 +41,26 @@ const PdfReader = () => {
   };
 
   useResizeObserver(containerRef, onResize);
+
+  useEffect(() => {
+    document.addEventListener("selectionchange", () => {
+      const selection = window.getSelection();
+      if (selection && selection.toString().length > 3) {
+        const element: Node | null = selection.focusNode;
+        if (containerRef.current?.contains(element)) {
+          setShowRec(true);
+        }
+      } else {
+        setShowRec(false);
+      }
+    });
+
+    return () => {
+      document.removeEventListener("selectionchange", () => {
+        setShowRec(false);
+      });
+    };
+  }, []);
 
   return (
     <div
@@ -57,12 +83,12 @@ const PdfReader = () => {
             );
           })}
       </Document>
-      {/* <button
-        className="absolute bottom-4 right-4 z-30 border"
+      <button
+        className={`fixed bottom-8 right-[53%] z-30 ${baseStyle} rounded-full border border-gray-200 bg-sky-500 p-2 text-white shadow-sm transition duration-300 hover:bg-sky-600 ${showRec ? "opacity-100" : "invisible translate-y-3 opacity-0"}`}
         onClick={() => console.log(window.getSelection()?.toString())}
       >
-        Test
-      </button> */}
+        <SparklesIcon className="size-5" />
+      </button>
     </div>
   );
 };

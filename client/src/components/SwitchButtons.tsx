@@ -13,7 +13,7 @@ const SwitchButtons = (props: SwitchProps) => {
     "rounded-full border-gray-200 bg-white p-2 bg-opacity-0 z-10";
 
   return (
-    <span className="relative flex justify-between rounded-full border">
+    <span className="relative flex justify-between rounded-full border backdrop-blur-md">
       <button
         className={`${baseStyle} ${props.activeFirst ? activeStyle : deActiveStyle}`}
         onClick={() => props.switchActive()}
