@@ -37,8 +37,8 @@ async def handler(websocket):
                 await websocket.send(json.dumps({"echo": message}))
 
             # TODO: set the proper format for links
-            if re.match(r"https?:\/\/", message):
-                webbrowser.open_new_tab(message)
+            if data["type"] == "open":
+                webbrowser.open_new_tab(data["value"]) if data["value"] else None
             elif data["type"] == "video":
                 result = await video_callback(data["value"])
                 result["id"] = message_id
