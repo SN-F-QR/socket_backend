@@ -83,7 +83,7 @@ const Player = (props: PlayerProps) => {
   };
 
   return (
-    <div className="flex h-screen basis-1/2 flex-col justify-center space-y-3 place-self-center p-2">
+    <div className="flex h-full w-full flex-col justify-center space-y-3 place-self-center p-2">
       <div className="justify-left flex">
         <input
           className="hidden"
