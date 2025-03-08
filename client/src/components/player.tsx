@@ -23,7 +23,7 @@ const Player = (props: PlayerProps) => {
 
   const [keywords, setKeywords] = useState<string[]>(["Hotel", "Food", "789"]);
 
-  const { requestRecommendation } = useRecommender();
+  const { requestRecommendation } = useRecommender({ directInput: true });
 
   const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -60,8 +60,11 @@ const Player = (props: PlayerProps) => {
 
   const requestVideoRecommend = async (keyword: string) => {
     if (videoRef.current && isPaused && props.editor) {
+      const context: string = props.editor
+        .getText()
+        .concat("<focus> " + keyword + " </focus>");
       setRecommendedKey(keyword);
-      await requestRecommendation(keyword);
+      await requestRecommendation(context);
       setRecommendedKey(undefined);
     }
   };

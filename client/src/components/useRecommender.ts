@@ -1,13 +1,17 @@
 import { useState } from "react";
 import { requestRecommend } from "./client-websocket";
 
-const useRecommender = () => {
+type RecommenderConfig = {
+  directInput: boolean;
+};
+
+const useRecommender = (args: RecommenderConfig) => {
   const [waitingState, setWaitingState] = useState<boolean>(false);
 
   const requestRecommendation = async (text: string) => {
     setWaitingState(true);
     try {
-      text = `<focus> ${text} </focus>`;
+      if (!args.directInput) text = `<focus> ${text} </focus>`;
       const response = await requestRecommend(text);
       console.log(`Successfully get ${response.length} recommendations`);
     } catch (error) {

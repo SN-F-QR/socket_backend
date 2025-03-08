@@ -28,7 +28,9 @@ const PdfReader = () => {
   const [containerWidth, setContainerWidth] = useState<number>();
 
   const [showRec, setShowRec] = useState<boolean>(false);
-  const { waitingState, requestRecommendation } = useRecommender();
+  const { waitingState, requestRecommendation } = useRecommender({
+    directInput: false,
+  });
 
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
