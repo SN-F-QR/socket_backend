@@ -9,7 +9,7 @@ type SettingMenuProps = {
 
 const SettingMenu = (props: SettingMenuProps) => {
   const buttonStyle =
-    "w-full py-2 text-left text-sm font-semibold transition duration-300 hover:text-sky-500";
+    "w-full py-2 text-left text-sm font-semibold transition duration-300";
   const activeList =
     "text-md flex w-48 flex-col rounded-md border bg-white py-2 px-4 shadow-lg max-h-96 overflow-hidden";
 
@@ -56,7 +56,7 @@ const SettingMenu = (props: SettingMenuProps) => {
         } ${activeList} `}
       >
         <button
-          className={`${buttonStyle} flex place-items-center justify-between`}
+          className={`${buttonStyle} flex place-items-center justify-between hover:text-sky-500`}
           onClick={() => {
             updateNoteList();
             setActiveHistory(!activeHistory);
@@ -77,7 +77,7 @@ const SettingMenu = (props: SettingMenuProps) => {
         }
 
         <button
-          className={buttonStyle}
+          className={`${buttonStyle} hover:text-sky-500`}
           onClick={() => {
             cleanOutdatedNotes();
             resetButtonStatus();
@@ -96,7 +96,10 @@ const SettingMenu = (props: SettingMenuProps) => {
           Finish
         </button>
 
-        <button className={buttonStyle} onClick={() => setIsActive(false)}>
+        <button
+          className={`${buttonStyle} hover:text-sky-500`}
+          onClick={() => setIsActive(false)}
+        >
           Cancel
         </button>
       </div>

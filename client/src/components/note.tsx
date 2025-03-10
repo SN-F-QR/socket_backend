@@ -4,7 +4,7 @@ import shortUUID from "short-uuid";
 
 import { NoteData } from "./note-manager";
 import MenuBar from "./meun-bar";
-import { useNoteEditor, TypeState } from "./useNoteEditor";
+import { TypeState } from "./useNoteEditor";
 import { FloatHint } from "./FloatHint";
 import SettingMenu from "./SettingMenu";
 import { requestSaveNote } from "./client-websocket";
