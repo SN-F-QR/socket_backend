@@ -48,17 +48,3 @@ export default tseslint.config({
   },
 });
 ```
-
-## PDF in web
-
-Currently change the file path in `PdfReader.tsx` to show your pdf.
-
-```html
-<Document
-  file={"../../London Visitor Guide.pdf"}
-  onLoadSuccess={onDocumentLoadSuccess}
-  options={options}
->
-  ...
-</Document>
-```

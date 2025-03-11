@@ -34,16 +34,6 @@ Run `main_video.py` as socket test server
 
 Run `socket_client_test.py` to send test case to server and check results in all clients
 
-## PDF in web
+## Study setting
 
-Currently change the file path in `PdfReader.tsx` to show your pdf.
-
-```html
-<Document
-  file={"../../London Visitor Guide.pdf"}
-  onLoadSuccess={onDocumentLoadSuccess}
-  options={options}
->
-  ...
-</Document>
-```
+Change the path in `backend_study_setting.json` and `client/study-setting.json` to load the correct files
