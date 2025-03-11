@@ -2,7 +2,8 @@ import { Editor, FloatingMenu } from "@tiptap/react";
 import { EditorState } from "@tiptap/pm/state";
 import { EditorView } from "@tiptap/pm/view";
 
-import { ArrowPathIcon } from "@heroicons/react/24/outline";
+import { ArrowPathIcon, SparklesIcon } from "@heroicons/react/24/outline";
+import { baseStyles, colors } from "./button";
 
 type FloatHintProps = {
   editor: Editor;
@@ -55,16 +56,18 @@ export const FloatHint = (props: FloatHintProps) => {
         editor={props.editor}
         tippyOptions={{ duration: 100 }}
       >
-        <div className="flex rounded bg-sky-500 shadow">
+        <div
+          className={`${baseStyles} flex shadow hover:scale-[1.05] ${colors.spark}`}
+        >
           <button
-            className="rounded px-[0.275rem] py-[0.325rem] text-sm text-white transition duration-300 hover:bg-sky-600"
+            className="p-1 text-white"
             onClick={() => props.selectedRecommend(props.editor)}
             disabled={props.recommending}
           >
             {props.recommending ? (
-              <ArrowPathIcon className="size-5 animate-spin place-self-center" />
+              <ArrowPathIcon className="size-6 animate-spin place-self-center" />
             ) : (
-              <p className="place-self-center">Recommend</p>
+              <SparklesIcon className="size-6 place-self-center" />
             )}
           </button>
         </div>
