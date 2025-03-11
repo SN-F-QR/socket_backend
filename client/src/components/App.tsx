@@ -42,7 +42,6 @@ const App = () => {
 
   const applyMaterial = (material: Material) => {
     setMaterial(material);
-    console.log(material);
   };
 
   const switchActive = () => {
@@ -58,6 +57,14 @@ const App = () => {
     selectedRecommend,
     handleH1Toggle,
   } = useNoteEditor(handleNetworkError);
+
+  useEffect(() => {
+    if (editor && material) {
+      editor.commands.setContent(
+        `<h1>A trip plan to ${material?.city}</h1><p></p>`,
+      );
+    }
+  }, [material]);
 
   return (
     <div className="relative flex h-screen overflow-y-auto p-2 max-md:flex-col max-md:space-y-2 md:justify-evenly md:space-x-3 md:overflow-clip">
