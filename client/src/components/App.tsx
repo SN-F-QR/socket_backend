@@ -47,7 +47,11 @@ const App = () => {
         <>
           <div className="relative h-full flex-1 overflow-y-auto">
             <div className={`${!showPdf ? "h-full" : "hidden"}`}>
-              <Player editor={editor} />
+              <Player
+                editor={editor}
+                videoPath={material.video}
+                subtitlePath={material.transcript}
+              />
             </div>
             <div className={`${showPdf ? "h-full" : "hidden"}`}>
               <PdfReader path={material.pdf} />

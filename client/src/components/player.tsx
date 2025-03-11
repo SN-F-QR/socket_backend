@@ -6,14 +6,16 @@ import useRecommender from "./useRecommender";
 
 type PlayerProps = {
   editor: Editor | null;
+  videoPath: string;
+  subtitlePath: string;
 };
 
 const Player = (props: PlayerProps) => {
-  const [videoPath, setVideoPath] = useState<string | undefined>(undefined); // fake path
-  const [videoName, setVideoName] = useState<string | undefined>(undefined);
-  const [subtitlePath, setSubtitlePath] = useState<string | undefined>(
-    undefined,
-  );
+  // const [videoPath, setVideoPath] = useState<string | undefined>(undefined); // fake path
+  // const [videoName, setVideoName] = useState<string | undefined>(undefined);
+  // const [subtitlePath, setSubtitlePath] = useState<string | undefined>(
+  //   undefined,
+  // );
   const [isPaused, setIsPaused] = useState<boolean>(true);
   const [requestingKeys, setRequestingKeys] = useState<boolean>(false);
   const [recommendedKey, setRecommendedKey] = useState<string | undefined>(
@@ -25,22 +27,22 @@ const Player = (props: PlayerProps) => {
 
   const { requestRecommendation } = useRecommender({ directInput: true });
 
-  const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files) {
-      console.log("files", files);
-      for (const file of files) {
-        const url = URL.createObjectURL(file);
-        if (file.type.startsWith("video/")) {
-          setVideoPath(url);
-          setVideoName(file.name);
-        } else if (file.type.endsWith("vtt")) {
-          setSubtitlePath(url);
-        }
-      }
-    }
-    setIsPaused(true);
-  };
+  // const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   const files = e.target.files;
+  //   if (files) {
+  //     console.log("files", files);
+  //     for (const file of files) {
+  //       const url = URL.createObjectURL(file);
+  //       if (file.type.startsWith("video/")) {
+  //         setVideoPath(url);
+  //         setVideoName(file.name);
+  //       } else if (file.type.endsWith("vtt")) {
+  //         setSubtitlePath(url);
+  //       }
+  //     }
+  //   }
+  //   setIsPaused(true);
+  // };
 
   const requestKeywords = async () => {
     if (videoRef.current && isPaused && !requestingKeys) {
@@ -75,7 +77,7 @@ const Player = (props: PlayerProps) => {
 
   return (
     <div className="flex h-full w-full flex-col justify-center space-y-3 place-self-center p-2">
-      <div className="justify-left flex">
+      {/* <div className="justify-left flex">
         <input
           className="hidden"
           name="upload"
@@ -95,23 +97,23 @@ const Player = (props: PlayerProps) => {
         <p className="place-self-center pl-2 text-sm font-semibold">
           {videoPath ? videoName : "同时选择视频和字幕文件"}
         </p>
-      </div>
-      {videoPath && (
+      </div> */}
+      {props.videoPath && (
         <div className="max-w-screen-xl">
           <video
             className="aspect-video max-w-full"
             controls
             ref={videoRef}
-            src={videoPath}
+            src={props.videoPath}
             onPause={toggleSuggest}
             onPlay={toggleSuggest}
             onTimeUpdate={() => setKeywords([])}
           >
-            <track default src={subtitlePath} srcLang="en" />
+            <track default src={props.subtitlePath} srcLang="en" />
           </video>
         </div>
       )}
-      {videoPath && (
+      {props.videoPath && (
         <VideoKeyBar
           isPaused={isPaused}
           keywords={keywords}
