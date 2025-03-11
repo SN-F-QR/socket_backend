@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# assets
+src/assets/*.vtt
+src/assets/*.webm
+src/assets/*.pdf
+study-setting.json

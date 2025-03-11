@@ -13,12 +13,16 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   import.meta.url,
 ).toString();
 
+type PdfProps = {
+  path: string;
+};
+
 const options = {
   cMapUrl: "/cmaps/",
   standardFontDataUrl: "/standard_fonts/",
 };
 
-const PdfReader = () => {
+const PdfReader = (props: PdfProps) => {
   const baseStyle =
     "transition-all duration-300 cursor-pointer whitespace-nowrap";
 
@@ -72,7 +76,7 @@ const PdfReader = () => {
       className="relative h-full w-full place-self-center overflow-x-hidden overflow-y-scroll rounded border p-2"
     >
       <Document
-        file={"../../London Visitor Guide.pdf"}
+        file={props.path}
         onLoadSuccess={onDocumentLoadSuccess}
         options={options}
       >
