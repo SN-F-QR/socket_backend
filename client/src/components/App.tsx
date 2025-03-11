@@ -84,7 +84,6 @@ const App = () => {
           </div>
         </>
       )}
-
       {!material && (
         <div className="h-full flex-1">
           <StudySelection materials={materials} setMaterial={applyMaterial} />
@@ -101,7 +100,6 @@ const App = () => {
           handleH1Toggle={handleH1Toggle}
         />
       </div>
-
       {error.showError && (
         <NetworkError messageId={error.errorId} onClose={closeError} />
       )}

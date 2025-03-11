@@ -8,9 +8,12 @@ type NetworkErrorProps = {
 
 const NetworkError = (props: NetworkErrorProps) => {
   useEffect(() => {
-    setTimeout(() => {
+    const timeout: number = setTimeout(() => {
       props.onClose();
     }, 3000);
+    return () => {
+      clearTimeout(timeout);
+    };
   }, [props.messageId]);
 
   return (
