@@ -8,6 +8,7 @@ type PlayerProps = {
   editor: Editor | null;
   videoPath: string;
   subtitlePath: string;
+  handleNetworkError: (errorId: string) => void;
 };
 
 const Player = (props: PlayerProps) => {
@@ -25,7 +26,10 @@ const Player = (props: PlayerProps) => {
 
   const [keywords, setKeywords] = useState<string[]>(["Hotel", "Food", "789"]);
 
-  const { requestRecommendation } = useRecommender({ directInput: true });
+  const { requestRecommendation } = useRecommender({
+    directInput: true,
+    handleNetworkError: props.handleNetworkError,
+  });
 
   // const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
   //   const files = e.target.files;
@@ -54,6 +58,9 @@ const Player = (props: PlayerProps) => {
         setKeywords(response.keywords);
       } catch (error) {
         console.error("Error while requesting keywords: ", error);
+        const errorId =
+          error instanceof Error ? error.message : "errorForRequestingKeys";
+        props.handleNetworkError(errorId);
       } finally {
         setRequestingKeys(false);
       }

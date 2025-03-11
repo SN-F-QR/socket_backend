@@ -3,6 +3,7 @@ import { requestRecommend } from "./client-websocket";
 
 type RecommenderConfig = {
   directInput: boolean;
+  handleNetworkError: (id: string) => void;
 };
 
 const useRecommender = (args: RecommenderConfig) => {
@@ -15,7 +16,10 @@ const useRecommender = (args: RecommenderConfig) => {
       const response = await requestRecommend(text);
       console.log(`Successfully get ${response.length} recommendations`);
     } catch (error) {
-      console.error("Error while requesting recommendation: ", error);
+      console.error("Error while requesting recommendation: ", error as Error);
+      if (error instanceof Error) {
+        args.handleNetworkError(error.message);
+      }
     } finally {
       setWaitingState(false);
     }

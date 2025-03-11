@@ -15,6 +15,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
 
 type PdfProps = {
   path: string;
+  handleNetworkError: (errorId: string) => void;
 };
 
 const options = {
@@ -34,6 +35,7 @@ const PdfReader = (props: PdfProps) => {
   const [showRec, setShowRec] = useState<boolean>(false);
   const { waitingState, requestRecommendation } = useRecommender({
     directInput: false,
+    handleNetworkError: props.handleNetworkError,
   });
 
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {

@@ -7,8 +7,14 @@ import Player from "./player";
 import Note from "./note";
 import SwitchButtons from "./SwitchButtons";
 import StudySelection from "./StudySelection";
+import NetworkError from "./NetworkError";
 
 import { materials, Material } from "./material-manager";
+
+type NetworkError = {
+  errorId: string;
+  showError: boolean;
+};
 
 const App = () => {
   useEffect(() => {
@@ -21,6 +27,18 @@ const App = () => {
 
   const [material, setMaterial] = useState<Material | undefined>(undefined);
   const [showPdf, setShowPdf] = useState<boolean>(true);
+  const [error, setError] = useState<NetworkError>({
+    errorId: "",
+    showError: false,
+  });
+
+  const handleNetworkError = (errorId: string) => {
+    setError({ errorId, showError: true });
+  };
+
+  const closeError = () => {
+    setError((prev) => ({ ...prev, showError: false }));
+  };
 
   const applyMaterial = (material: Material) => {
     setMaterial(material);
@@ -39,10 +57,10 @@ const App = () => {
     setUpdateCount,
     selectedRecommend,
     handleH1Toggle,
-  } = useNoteEditor();
+  } = useNoteEditor(handleNetworkError);
 
   return (
-    <div className="flex h-screen overflow-y-auto p-2 max-md:flex-col max-md:space-y-2 md:justify-evenly md:space-x-3 md:overflow-clip">
+    <div className="relative flex h-screen overflow-y-auto p-2 max-md:flex-col max-md:space-y-2 md:justify-evenly md:space-x-3 md:overflow-clip">
       {material && (
         <>
           <div className="relative h-full flex-1 overflow-y-auto">
@@ -51,10 +69,14 @@ const App = () => {
                 editor={editor}
                 videoPath={material.video}
                 subtitlePath={material.transcript}
+                handleNetworkError={handleNetworkError}
               />
             </div>
             <div className={`${showPdf ? "h-full" : "hidden"}`}>
-              <PdfReader path={material.pdf} />
+              <PdfReader
+                path={material.pdf}
+                handleNetworkError={handleNetworkError}
+              />
             </div>
           </div>
           <div className="absolute left-1 top-4 z-30">
@@ -79,6 +101,10 @@ const App = () => {
           handleH1Toggle={handleH1Toggle}
         />
       </div>
+
+      {error.showError && (
+        <NetworkError messageId={error.errorId} onClose={closeError} />
+      )}
     </div>
   );
 };

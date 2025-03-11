@@ -24,7 +24,7 @@ type EditorWrap = {
   editor: Editor;
 };
 
-export const useNoteEditor = () => {
+export const useNoteEditor = (handleNetworkError: (id: string) => void) => {
   const extensions = [
     Document,
     Paragraph,
@@ -108,6 +108,9 @@ export const useNoteEditor = () => {
       console.log(`Recommendation time: ${(end - start) / 1000}s`);
     } catch (e) {
       console.error(`Cannot do recommendation since: ${e}`);
+      if (e instanceof Error) {
+        handleNetworkError(e.message);
+      }
     } finally {
       setRecommending(false);
     }
