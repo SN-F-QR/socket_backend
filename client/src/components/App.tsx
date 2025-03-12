@@ -61,7 +61,7 @@ const App = () => {
   useEffect(() => {
     if (editor && material) {
       editor.commands.setContent(
-        `<h1>A trip plan to ${material?.city}</h1><p></p>`,
+        `<h1>A trip plan from Tokyo to ${material?.city}</h1><p></p>`,
       );
     }
   }, [material]);

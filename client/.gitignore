@@ -26,5 +26,6 @@ dist-ssr
 # assets
 src/assets/*.vtt
 src/assets/*.webm
+src/assets/*.mp4
 src/assets/*.pdf
 study-setting.json
