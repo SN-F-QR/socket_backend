@@ -280,6 +280,9 @@ export const useNoteEditor = (handleNetworkError: (id: string) => void) => {
         class:
           "prose prose-sm sm:prose xl:prose-lg m-5 focus:outline-none prose-li:leading-4 prose-h1:text-2xl",
       },
+      transformPastedHTML: (html: string) => {
+        return html.replace(/<[^>]*>/g, "");
+      },
     },
     onUpdate: onUpdate,
     onTransaction: onTransaction,
