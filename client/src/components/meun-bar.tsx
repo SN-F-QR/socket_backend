@@ -51,26 +51,21 @@ const MenuBar = (props: menuProps) => {
           <ListBulletIcon className="size-6" />
         </button>
       </div>
-      {/* {props.editor.state.selection.to - props.editor.state.selection.from >
-        3 && (
+      {props.recommending && (
         <div className="flex items-center">
           <button
-            className="flex min-h-8 space-x-1 rounded-md bg-sky-500 px-2 text-white transition duration-300 hover:bg-sky-600"
+            className="flex min-h-8 space-x-1 rounded-md bg-sky-500 px-2 text-white transition duration-300"
             onClick={() => props.recommend(props.editor)}
-            disabled={props.disableButton || props.recommending}
+            disabled={true}
           >
-            {props.recommending ? (
-              <>
-                <ArrowPathIcon className="size-5 animate-spin place-self-center" />
-                <p className="place-self-center">Processing</p>
-              </>
-            ) : (
-              <p className="place-self-center">Recommend</p>
-            )}
+            <>
+              <ArrowPathIcon className="size-5 animate-spin place-self-center" />
+              <p className="place-self-center">Processing</p>
+            </>
           </button>
           <span className="mr-2"></span>
         </div>
-      )} */}
+      )}
     </div>
   );
 };

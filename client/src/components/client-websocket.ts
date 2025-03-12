@@ -23,6 +23,11 @@ export type VideoMessage = Message & {
   keywords: string[];
 };
 
+type LinkMessage = Message & {
+  type: "open";
+  value: string;
+};
+
 type EchoMessage = Message & {
   type: "echo";
   value: string;
@@ -85,6 +90,10 @@ const initializeWebsocket = () => {
       console.log("Video response received");
       const videoResponse: VideoMessage = response as VideoMessage;
       tryResolve(response.id, videoResponse);
+    } else if (response.type === "open") {
+      console.log(`Link response received with id: ${response.id}`);
+      const linkResponse: LinkMessage = response as LinkMessage;
+      window.open(linkResponse.value, "_blank")?.focus();
     } else {
       console.warn("Unknown response message: ", event.data);
     }
@@ -135,7 +144,7 @@ const sendMessage = (message: Message): Promise<ResponseMessage> => {
             }
             responseResolve.delete(message.id);
             timeouts.delete(message.id);
-          }, 10 * 1000);
+          }, 15 * 1000);
           timeouts.set(message.id, timeOutId);
           responseResolve.set(message.id, resolve);
         }

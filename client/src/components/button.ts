@@ -7,5 +7,5 @@ export const colors = {
 };
 
 export const getButtonStyles = (): string => {
-  return `${baseStyles} ${colors.normal} flex min-w-28 justify-center space-x-1 px-4 py-2 text-white hover:bg-sky-600 hover:shadow-lg shadow-md hover:scale-[1.05]`;
+  return `${baseStyles} ${colors.normal} flex min-w-36 justify-center space-x-1 px-4 py-2 text-white hover:bg-sky-600 hover:shadow-lg shadow-md hover:scale-[1.05]`;
 };

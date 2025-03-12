@@ -3,6 +3,7 @@ import websockets
 import webbrowser
 import re
 import json
+import uuid
 
 from dotenv import load_dotenv
 from asyncio import create_task
@@ -38,7 +39,9 @@ async def handler(websocket):
 
             # TODO: set the proper format for links
             if data["type"] == "open":
-                webbrowser.open_new_tab(data["value"]) if data["value"] else None
+                # webbrowser.open_new_tab(data["value"]) if data["value"] else None
+                data["id"] = str(uuid.uuid1())
+                create_task(send_message_once(json.dumps(data)))
             elif data["type"] == "video":
                 result = await video_callback(data["value"])
                 result["id"] = message_id
