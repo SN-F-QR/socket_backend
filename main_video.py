@@ -1,4 +1,5 @@
 import asyncio
+import argparse
 from dotenv import load_dotenv
 import json
 
@@ -8,7 +9,11 @@ from chat import ChatRecommender
 
 
 if __name__ == "__main__":
-    study_number = 1
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--task", "-t", type=int, default=0)
+    args = parser.parse_args()
+
+    study_number = args.task
     load_dotenv("key.env")
     with open("backend_study_setting.json", "r") as setting:
         study_setting = json.load(setting)[study_number]
