@@ -14,7 +14,11 @@ class SerpapiWrapper:
         self.base_url = "https://serpapi.com/search?engine="
         self.api_key = os.getenv("SERPAPI_API_KEY")
 
-    def SearchHotel(self, query, check_in, check_out):
+    def SearchHotel(self, query, check_in, check_out, min_price=None, max_price=None):
+        if min_price == "None":
+            min_price = None
+        if max_price == "None":
+            max_price = None
         params = {
             "engine": "google_hotels",
             "q": query,
@@ -25,6 +29,9 @@ class SerpapiWrapper:
             "api_key": self.api_key,
             "currency": "JPY",
             "adults": 1,
+            "sort_by": 3,
+            "min_price": min_price,
+            "max_price": max_price,
         }
         search = GoogleSearch(params)
 
@@ -53,6 +60,7 @@ class SerpapiWrapper:
             "arrival_id": _arrival_id,
             "outbound_date": _outbound_date,
             "return_date": _return_date,
+            "deep_search": True,
         }
         search = GoogleSearch(params)
         outbound_data = json.loads(search.get_raw_json())
