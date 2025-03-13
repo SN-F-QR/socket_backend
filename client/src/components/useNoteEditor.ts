@@ -102,7 +102,7 @@ export const useNoteEditor = (handleNetworkError: (id: string) => void) => {
     try {
       const start = performance.now();
       setRecommending(true);
-      const recommendations = await requestRecommend(note);
+      const recommendations = await requestRecommend(note, "note");
       console.log(`Successfully get ${recommendations.length} recommendations`);
       const end = performance.now();
       console.log(`Recommendation time: ${(end - start) / 1000}s`);

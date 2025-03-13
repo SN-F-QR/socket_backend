@@ -73,7 +73,7 @@ const Player = (props: PlayerProps) => {
         .getText()
         .concat("<focus> " + keyword + " </focus>");
       setRecommendedKey(keyword);
-      await requestRecommendation(context);
+      await requestRecommendation(context, "video");
       setRecommendedKey(undefined);
     }
   };

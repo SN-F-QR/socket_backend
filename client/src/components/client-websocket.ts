@@ -133,13 +133,13 @@ const sendMessage = (message: Message): Promise<ResponseMessage> => {
         message.id = shortUUID.generate();
         socket.ws.send(JSON.stringify(message));
         console.log(`Message ${message.id} sent, type: ${message.type}`);
-        if (message.type === "recommend") {
+        if (message.type.startsWith("recommend")) {
           waitingRecommend = true;
         }
-        if (message.type === "video" || message.type === "recommend") {
+        if (message.type === "video" || message.type.startsWith("recommend")) {
           const timeOutId: number = window.setTimeout(() => {
             reject(new Error("Timeout for message: " + message.id));
-            if (message.type === "recommend") {
+            if (message.type.startsWith("recommend")) {
               resetRecStatus();
             }
             responseResolve.delete(message.id);
@@ -170,13 +170,16 @@ const sendVideoProgress = (progress: number): Promise<VideoMessage> => {
   return sendMessage(message) as Promise<VideoMessage>;
 };
 
-const requestRecommend = (note: string): Promise<RecommendMessage[]> => {
+const requestRecommend = (
+  note: string,
+  from: "pdf" | "video" | "note",
+): Promise<RecommendMessage[]> => {
   if (waitingRecommend) {
     return Promise.reject(new Error("Already request for recommend"));
   }
   const message = {
     id: "",
-    type: "recommend",
+    type: `recommend-${from}`,
     value: note,
   };
   return sendMessage(message) as Promise<RecommendMessage[]>;

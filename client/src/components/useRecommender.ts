@@ -9,11 +9,11 @@ type RecommenderConfig = {
 const useRecommender = (args: RecommenderConfig) => {
   const [waitingState, setWaitingState] = useState<boolean>(false);
 
-  const requestRecommendation = async (text: string) => {
+  const requestRecommendation = async (text: string, from: "pdf" | "video") => {
     setWaitingState(true);
     try {
       if (!args.directInput) text = `<focus> ${text} </focus>`;
-      const response = await requestRecommend(text);
+      const response = await requestRecommend(text, from);
       console.log(`Successfully get ${response.length} recommendations`);
     } catch (error) {
       console.error("Error while requesting recommendation: ", error as Error);

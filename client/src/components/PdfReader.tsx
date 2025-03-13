@@ -98,7 +98,7 @@ const PdfReader = (props: PdfProps) => {
         onClick={() => {
           const selectionText = window.getSelection()?.toString();
           if (selectionText) {
-            requestRecommendation(selectionText);
+            requestRecommendation(selectionText, "pdf");
           }
         }}
       >
