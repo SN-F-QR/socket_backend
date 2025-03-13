@@ -4,6 +4,7 @@ import webbrowser
 import re
 import json
 import uuid
+import logging as log
 
 from dotenv import load_dotenv
 from asyncio import create_task
@@ -16,6 +17,14 @@ rec_callback = None  # call normal recommender
 serp_callback = None  # call serp api
 serper_callback = None  # call serper api
 # action_callback = None  # handle action
+
+# Record the number of requests for each type
+request_type = {
+    "pdf": 0,
+    "video": 0,
+    "note": 0,
+    "open": 0,
+}
 
 
 async def handler(websocket):
@@ -42,11 +51,16 @@ async def handler(websocket):
                 # webbrowser.open_new_tab(data["value"]) if data["value"] else None
                 data["id"] = str(uuid.uuid1())
                 create_task(send_message_once(json.dumps(data)))
+                request_type["open"] += 1
+                log.info(f"Open link request: {data['value']}")
+                log_request_count()
             elif data["type"] == "video":
                 result = await video_callback(data["value"])
                 result["id"] = message_id
                 create_task(send_message_once(json.dumps(result)))
-            elif data["type"] == "recommend":
+            elif data["type"].startswith("recommend"):
+                call_from = data["type"].split("-")[1]
+                request_type[call_from] += 1
                 tasks = [
                     rec_callback(data["value"]),
                     serp_callback(data["value"]),
@@ -56,6 +70,8 @@ async def handler(websocket):
                     result = await future
                     result["id"] = message_id
                     create_task(send_message_once(json.dumps(result)))
+                log.info(f"Recommendation request from {call_from.upper()}")
+                log_request_count()
             elif data["type"] == "save":
                 save_note(data["value"])
 
@@ -156,6 +172,11 @@ async def start():
         except Exception as e:
             print(f"Server error: {e}")
             await asyncio.sleep(5)
+
+
+def log_request_count():
+    for key in request_type:
+        log.info(f"{key} request count: {request_type[key]}")
 
 
 # def run_ws_server():

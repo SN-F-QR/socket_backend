@@ -2,6 +2,8 @@ import asyncio
 import argparse
 from dotenv import load_dotenv
 import json
+import logging as log
+import datetime
 
 import sockettest
 from VideoHandler import VideoHandler
@@ -12,6 +14,14 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--task", "-t", type=int, default=0)
     args = parser.parse_args()
+
+    log.basicConfig(
+        filename=f"./log/{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M')}-{args.task}.log",
+        level=log.INFO,
+        format="%(asctime)s - %(message)s",
+        datefmt="%H:%M:%S %p",
+    )
+    log.info("Server started")
 
     study_number = args.task
     load_dotenv("key.env")
