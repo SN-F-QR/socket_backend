@@ -56,6 +56,10 @@ class ChatRecommender:
             return self.format_result("widgets", "", widgets)
         except AssertionError:
             print("No widgets found in response.")
+            return self.format_result("widgets", "", [])
+        except Exception as e:
+            print(f"Unknown Error for widgets: {e}")
+            return self.format_result("widgets", "", [])
 
     async def request_serp(self, text_input):
         """
@@ -88,21 +92,29 @@ class ChatRecommender:
         except AssertionError:
             print("API not found, check LLM response if it is correct.")
             return self.format_result("defined", "", [])
+        except Exception as e:
+            print(
+                f"Error: Unknown exception for serp, type: {e.__class__.__name__} for {e}"
+            )
+            return self.format_result("defined", "", [])
 
     async def request_serper(self, text_input):
         start_time = time.perf_counter()
         print(f"Serper API is starting in {start_time:.3f}")
-        response = await self.create_chat("serper", text_input)
-        args = json.loads(extract_json_array(response.choices[0].message.content))
-        list_args = list(map(lambda arg: arg["keyword"].strip(), args))
-        print(f"Serper Args: {list_args}")
-        links = await self.serper.post_all_questions(list_args)
-        end_time = time.perf_counter()
-        print(
-            f"Serper API is finished in {end_time:.3f}, with spend time {end_time - start_time:.3f}"
-        )
-
-        return self.format_result("serper", "", links)
+        try:
+            response = await self.create_chat("serper", text_input)
+            args = json.loads(extract_json_array(response.choices[0].message.content))
+            list_args = list(map(lambda arg: arg["keyword"].strip(), args))
+            print(f"Serper Args: {list_args}")
+            links = await self.serper.post_all_questions(list_args)
+            end_time = time.perf_counter()
+            print(
+                f"Serper API is finished in {end_time:.3f}, with spend time {end_time - start_time:.3f}"
+            )
+            return self.format_result("serper", "", links)
+        except Exception as e:
+            print(f"Unknown Error for serper: {e}")
+            return self.format_result("serper", "", [])
 
     async def request_video_keywords(self, text_input):
         response = await self.create_chat("video", text_input, "<transcript>")
