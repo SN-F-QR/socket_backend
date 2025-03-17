@@ -61,7 +61,7 @@ const App = () => {
   useEffect(() => {
     if (editor && material) {
       editor.commands.setContent(
-        `<h1>A trip plan from Tokyo to ${material?.city}</h1><p></p>`,
+        `<h1>A trip plan from Tokyo to ${material?.city}</h1><p>June 9 - June 15</p><p>Hotel budget: 20000JPY - 30000JPY</p><p></p>`,
       );
     }
   }, [material]);

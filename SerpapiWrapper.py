@@ -29,7 +29,7 @@ class SerpapiWrapper:
             "api_key": self.api_key,
             "currency": "JPY",
             "adults": 1,
-            "sort_by": 3,
+            "sort_by": 13,
             "min_price": min_price,
             "max_price": max_price,
         }

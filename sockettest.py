@@ -74,6 +74,7 @@ async def handler(websocket):
                 log_request_count()
             elif data["type"] == "save":
                 save_note(data["value"])
+                log.info("END: Save note request")
 
     except websockets.exceptions.ConnectionClosed:
         print(f"Device disconnected: {websocket.remote_address}")
